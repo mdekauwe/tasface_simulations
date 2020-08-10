@@ -75,7 +75,7 @@ class FarquharC3(object):
 
     def photosynthesis(self, p, Cs=None, Tleaf=None, Par=None, vpd=None,
                        mult=None, scalex=None, Vcmax25=None,
-                       Jmax25=None):
+                       Jmax25=None, beta=None):
         """
         Parameters
         ----------
@@ -162,8 +162,15 @@ class FarquharC3(object):
             if np.isclose(Cs, 0.0):
                 gs_over_a = 0.0
             else:
-                gs_over_a = (1.0 + p.g1 / math.sqrt(vpd)) / Cs
-            ci_over_ca = p.g1 / (p.g1 + math.sqrt(vpd))
+                if beta is None:
+                    gs_over_a = (1.0 + p.g1 / math.sqrt(vpd)) / Cs
+                else:
+                    gs_over_a = (1.0 + (p.g1*beta) / math.sqrt(vpd)) / Cs
+            if beta is None:
+                ci_over_ca = p.g1 / (p.g1 + math.sqrt(vpd))
+            else:
+                ci_over_ca = (p.g1*beta) / ((p.g1*beta) + math.sqrt(vpd))
+
 
         elif self.gs_model == "user_defined":
             g0 = p.g0 / c.GSC_2_GSW
