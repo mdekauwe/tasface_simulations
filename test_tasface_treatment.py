@@ -32,18 +32,11 @@ def read_met_file(fname):
     ds = xr.open_dataset(fname)
     lat = ds.latitude.values[0][0]
     lon = ds.longitude.values[0][0]
-    rh_there = False
 
-    # W/m2, deg K, mm/s, kg/kg, m/s, Pa, ppmw
-    try:
-        vars_to_keep = ['SWdown','Tair','Qair','Wind','Psurf','VPD']
-        df = ds[vars_to_keep].squeeze(dim=["y","x"],
-                                      drop=True).to_dataframe()
-    except KeyError:
-        vars_to_keep = ['SWdown','Tair','Wind','Psurf','RH']
-        df = ds[vars_to_keep].squeeze(dim=["y","x"],
-                                      drop=True).to_dataframe()
-        rh_there = True
+    vars_to_keep = ['SWdown','Tair','Qair','Wind','Psurf',\
+                    'VPD','CO2air','Wind']
+    df = ds[vars_to_keep].squeeze(dim=["y","x"],
+                                  drop=True).to_dataframe()
 
     time_idx = df.index
 
@@ -53,11 +46,6 @@ def read_met_file(fname):
 
     df["PAR"] = df.SWdown * c.SW_2_PAR
     df["Tair"] -= c.DEG_2_KELVIN
-
-    if rh_there:
-        esat = calc_esat(df.Tair)
-        e = (df.RH / 100.) * esat
-        df["vpd"] = (esat - e) / 1000.
 
     return df, lat, lon
 
