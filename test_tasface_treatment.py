@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """
 Blah
 
@@ -33,6 +34,24 @@ def main(met):
 
     out = setup_output_dataframe(nhours)
 
+    i = 0
+    j = 0
+    while i < len(met):
+        year = met.index.year[i]
+        doy = met.doy[i]
+        hod = met.hod[i] + 1
+
+        print(year, doy, hod)
+
+
+
+
+
+
+
+        i += 1
+
+    return (out)
 
 
 def setup_output_dataframe(ndays):
@@ -91,4 +110,4 @@ if __name__ == "__main__":
 
 
 
-    main(met)
+    out = main(met)
