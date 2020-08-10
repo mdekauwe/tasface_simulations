@@ -33,7 +33,7 @@ def read_met_file(fname):
     lat = ds.latitude.values[0][0]
     lon = ds.longitude.values[0][0]
 
-    vars_to_keep = ['SWdown','Tair','Qair','Wind','Psurf',\
+    vars_to_keep = ['SWdown','Tair','Wind','Psurf',\
                     'VPD','CO2air','Wind']
     df = ds[vars_to_keep].squeeze(dim=["y","x"],
                                   drop=True).to_dataframe()
@@ -43,9 +43,14 @@ def read_met_file(fname):
     df = df.reindex(time_idx)
     df['year'] = df.index.year
     df['doy'] = df.index.dayofyear
-
-    df["PAR"] = df.SWdown * c.SW_2_PAR
+    df["par"] = df.SWdown * c.SW_2_PAR
     df["Tair"] -= c.DEG_2_KELVIN
+    df = df.drop('SWdown', axis=1)
+    df = df.rename(columns={'PAR': 'par', 'Tair': 'tair', 'Wind': 'wind',
+                            'VPD': 'vpd', 'CO2air': 'co2', 'Psurf': 'press'})
+
+    # Make sure there is no bad data...
+    df.vpd = np.where(df.vpd < 0.0, 0.0, df.vpd)
 
     return df, lat, lon
 
@@ -58,10 +63,10 @@ if __name__ == "__main__":
     #
     year_to_run = 2003
     met_fn = "met/AU-Tum_2002-2017_OzFlux_Met.nc"
-    (df_met, lat, lon) = read_met_file(met_fn)
-    df_met = df_met[df_met.index.year == year_to_run]
+    (met, lat, lon) = read_met_file(met_fn)
+    met = met[met.index.year == year_to_run]
 
-    plt.plot(df_met.Tair)
+    plt.plot(met.press)
     plt.show()
 
     sys.exit()
