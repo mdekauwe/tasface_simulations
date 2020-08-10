@@ -17,10 +17,10 @@ import xarray as xr
 
 sys.path.append('src')
 
-from weather_generator import WeatherGenerator
 import constants as c
-from farq import FarquharC3
-from penman_monteith_leaf import PenmanMonteith
+import parameters as p
+from radiation import calculate_absorbed_radiation
+from two_leaf import Canopy as TwoLeaf
 
 
 def main(met):
