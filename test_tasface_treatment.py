@@ -99,10 +99,14 @@ if __name__ == "__main__":
     #
     ##  Just use TUMBA nc for now
     #
-    year_to_run = 2003
     met_fn = "met/AU-Tum_2002-2017_OzFlux_Met.nc"
     (met, lat, lon) = read_met_file(met_fn)
-    met = met[met.index.year == year_to_run]
+
+    # Just keep ~ a spring/summer
+    met = met[(met.index.year == 2003) | (met.index.year == 2004)]
+    met = met[ ((met.index.year == 2003) & (met.doy >= 245)) |
+               ((met.index.year == 2004) & (met.doy <= 60)) ]
+
 
     #plt.plot(met.press)
     #plt.show()
