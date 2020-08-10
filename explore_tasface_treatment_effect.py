@@ -24,13 +24,14 @@ from radiation import calculate_absorbed_radiation
 from two_leaf import Canopy as TwoLeaf
 
 
-def main(met):
+def main(met, lai):
 
+    T = TwoLeaf(p, gs_model="medlyn")
+    
     days = met.doy
     hod = met.hod
     ndays = int(len(days) / 24.)
     nhours = len(met)
-    print(ndays, nhours)
 
     out = setup_output_dataframe(nhours)
 
@@ -41,12 +42,13 @@ def main(met):
         doy = met.doy[i]
         hod = met.hod[i] + 1
 
-        print(year, doy, hod)
+        (An, et, Tcan,
+         apar, lai_leaf) = T.main(met.tair[i], met.par[i], met.vpd[i],
+                                  met.wind[i], met.press[i], met.ca[i],
+                                  doy, hod, lai[i], Vcmax25=p.Vcmax25,
+                                  Jmax25=p.Jmax25)
 
-
-
-
-
+        print(An)
 
 
         i += 1
@@ -85,7 +87,7 @@ def read_met_file(fname):
     df["Tair"] -= c.DEG_2_KELVIN
     df = df.drop('SWdown', axis=1)
     df = df.rename(columns={'PAR': 'par', 'Tair': 'tair', 'Wind': 'wind',
-                            'VPD': 'vpd', 'CO2air': 'co2', 'Psurf': 'press'})
+                            'VPD': 'vpd', 'CO2air': 'ca', 'Psurf': 'press'})
 
     # Make sure there is no bad data...
     df.vpd = np.where(df.vpd < 0.0, 0.0, df.vpd)
@@ -102,16 +104,16 @@ if __name__ == "__main__":
     met_fn = "met/AU-Tum_2002-2017_OzFlux_Met.nc"
     (met, lat, lon) = read_met_file(met_fn)
 
+    #plt.plot(met.press)
+    #plt.show()
+
     # Just keep ~ a spring/summer
     met = met[(met.index.year == 2003) | (met.index.year == 2004)]
     met = met[ ((met.index.year == 2003) & (met.doy >= 245)) |
                ((met.index.year == 2004) & (met.doy <= 60)) ]
 
 
-    #plt.plot(met.press)
-    #plt.show()
+    # Need to create an LAI harvest timeseries, for now fix it.
+    lai = np.ones(len(met)) * 2.0
 
-
-
-
-    out = main(met)
+    out = main(met, lai)
