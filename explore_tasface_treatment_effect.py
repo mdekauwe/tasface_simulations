@@ -288,7 +288,7 @@ if __name__ == "__main__":
     ax2.plot(out_eCa.sw, out_eCa.beta, "ro")
 
     ax2.set_xlabel("SWC (m$^{3}$ m$^{-3}$)")
-    ax2.set_xlabel("Beta (-)")
+    ax2.set_ylabel("Beta (-)")
 
     ax3.plot(time_day, out_aCa.An_can, "b-")
     ax3.plot(time_day, out_eCa.An_can, "r-")
