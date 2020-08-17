@@ -199,6 +199,11 @@ def read_met_file(fname):
     return df, lat, lon
 
 
+def moving_average(a, n=3) :
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
 if __name__ == "__main__":
 
 
@@ -256,11 +261,11 @@ if __name__ == "__main__":
     theta_sat = 0.31
     out_aCa = main(met, lai, soil_volume, theta_sat)
 
-    met.ca *= 1.6
+    met.ca *= 1.5
     out_eCa = main(met, lai, soil_volume, theta_sat)
 
 
-    lai *= 1.1
+    lai *= 1.3
     out_eCa_eL = main(met, lai, soil_volume, theta_sat)
 
     fig = plt.figure(figsize=(18,6))
@@ -300,8 +305,13 @@ if __name__ == "__main__":
     print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
     #response = ((out_eCa.An_can/out_aCa.An_can)-1.0)*100.
     #response = np.where(response > 100, np.nan, response)
-    ax2.plot(time_day, response_eca, "r-", label="eC$_a$")
-    ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
+
+    win = 5
+    ax2.plot(moving_average(time_day.values, n=win),
+             moving_average(response_eca.values, n=win), "r-", label="eC$_a$")
+    ax2.plot(moving_average(time_day.values, n=win),
+             moving_average(response_eca_ela.values, n=win), "g-",
+             label="eC$_a$ + e$_{LAI}$")
     ax2.set_ylim(0, 100)
 
 
