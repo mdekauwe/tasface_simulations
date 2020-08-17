@@ -229,8 +229,8 @@ if __name__ == "__main__":
 
     # Need to create an LAI harvest timeseries
     lai = np.zeros(len(met))
-    lai_max = 1.0
-    days_to_max = 13
+    lai_max = 4.0
+    days_to_max = 30
     cnt = 0
     for i in range(len(lai)):
 
@@ -253,12 +253,15 @@ if __name__ == "__main__":
     soil_depth = 0.2 # depth of soil bucket, m
     ground_area = 1.0 # m
     soil_volume = ground_area * soil_depth # m3
-    theta_sat = 0.4
+    theta_sat = 0.31
     out_aCa = main(met, lai, soil_volume, theta_sat)
 
     met.ca *= 1.6
     out_eCa = main(met, lai, soil_volume, theta_sat)
 
+
+    lai *= 1.1
+    out_eCa_eL = main(met, lai, soil_volume, theta_sat)
 
     fig = plt.figure(figsize=(18,6))
     fig.subplots_adjust(hspace=0.1)
@@ -272,28 +275,37 @@ if __name__ == "__main__":
     plt.rcParams['xtick.labelsize'] = 12
     plt.rcParams['ytick.labelsize'] = 12
 
-    ax1 = fig.add_subplot(131)
-    ax2 = fig.add_subplot(132)
-    ax3 = fig.add_subplot(133)
+    ax1 = fig.add_subplot(121)
+    ax2 = fig.add_subplot(122)
 
 
 
-    ax1.plot(time_day, out_aCa.sw, "b-", label="Amb")
-    ax1.plot(time_day, out_eCa.sw, "r-", label="Ele")
+
+    ax1.plot(time_day, out_aCa.sw, "b-", label="aC$_a$")
+    ax1.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
+    ax1.plot(time_day, out_eCa_eL.sw, "g--", label="eC$_a$ + eC$_{LAI}$")
     ax1.legend(numpoints=1, loc="best", frameon=False)
 
     ax1.set_ylabel("SWC (m$^{3}$ m$^{-3}$)")
 
-    ax2.plot(out_aCa.sw, out_aCa.beta, "bo")
-    ax2.plot(out_eCa.sw, out_eCa.beta, "ro")
+    #ax2.plot(out_aCa.sw, out_aCa.beta, "bo")
+    #ax2.plot(out_eCa.sw, out_eCa.beta, "ro")
+    #ax2.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
 
-    ax2.set_xlabel("SWC (m$^{3}$ m$^{-3}$)")
-    ax2.set_ylabel("Beta (-)")
+    rr = np.log(out_eCa.An_can / out_aCa.An_can)
+    response_eca = (np.exp(rr)-1.0)*100.0
 
-    ax3.plot(time_day, out_aCa.An_can, "b-")
-    ax3.plot(time_day, out_eCa.An_can, "r-")
+    rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
+    response_eca_ela = (np.exp(rr)-1.0)*100.0
 
-    ax3.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
+    #response = ((out_eCa.An_can/out_aCa.An_can)-1.0)*100.
+    #response = np.where(response > 100, np.nan, response)
+    ax2.plot(time_day, response_eca, "r-", label="eC$_a$")
+    ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + eC$_{LAI}$")
+    ax2.set_ylim(0, 100)
+
+
+    ax2.set_ylabel("Response of A to CO$_2$ (%)")
 
     fig.autofmt_xdate()
     fig.savefig("blah.png", bbox_inches='tight', pad_inches=0.1)
