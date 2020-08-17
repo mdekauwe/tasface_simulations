@@ -199,11 +199,6 @@ def read_met_file(fname):
     return df, lat, lon
 
 
-def moving_average(a, n=3) :
-    ret = np.cumsum(a, dtype=float)
-    ret[n:] = ret[n:] - ret[:-n]
-    return ret[n - 1:] / n
-
 if __name__ == "__main__":
 
 
@@ -265,10 +260,10 @@ if __name__ == "__main__":
     out_eCa = main(met, lai, soil_volume, theta_sat)
 
 
-    lai *= 1.3
+    lai *= 1.2
     out_eCa_eL = main(met, lai, soil_volume, theta_sat)
 
-    fig = plt.figure(figsize=(18,6))
+    fig = plt.figure(figsize=(9,16))
     fig.subplots_adjust(hspace=0.1)
     fig.subplots_adjust(wspace=0.2)
     plt.rcParams['text.usetex'] = False
@@ -280,15 +275,16 @@ if __name__ == "__main__":
     plt.rcParams['xtick.labelsize'] = 12
     plt.rcParams['ytick.labelsize'] = 12
 
-    ax1 = fig.add_subplot(121)
-    ax2 = fig.add_subplot(122)
+    ax1 = fig.add_subplot(311)
+    ax2 = fig.add_subplot(312)
+    ax3 = fig.add_subplot(313)
 
 
 
 
     ax1.plot(time_day, out_aCa.sw, "b-", label="aC$_a$")
     ax1.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
-    ax1.plot(time_day, out_eCa_eL.sw, "g--", label="eC$_a$ + e$_{LAI}$")
+    ax1.plot(time_day, out_eCa_eL.sw, "g-", label="eC$_a$ + e$_{LAI}$")
     ax1.legend(numpoints=1, loc="best", frameon=False)
 
     ax1.set_ylabel("SWC (m$^{3}$ m$^{-3}$)")
@@ -303,19 +299,38 @@ if __name__ == "__main__":
     rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
     response_eca_ela = (np.exp(rr)-1.0)*100.0
     print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
+
     #response = ((out_eCa.An_can/out_aCa.An_can)-1.0)*100.
-    #response = np.where(response > 100, np.nan, response)
+    response_eca_ela = np.where(response_eca > 100, np.nan, response_eca_ela)
+    response_eca = np.where(response_eca > 100, np.nan, response_eca)
 
-    win = 5
-    ax2.plot(moving_average(time_day.values, n=win),
-             moving_average(response_eca.values, n=win), "r-", label="eC$_a$")
-    ax2.plot(moving_average(time_day.values, n=win),
-             moving_average(response_eca_ela.values, n=win), "g-",
-             label="eC$_a$ + e$_{LAI}$")
+
+    ax2.plot(time_day, response_eca, "r-", label="eC$_a$")
+    ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
     ax2.set_ylim(0, 100)
-
-
     ax2.set_ylabel("Response of A to CO$_2$ (%)")
+
+    rr = np.log(out_eCa.E_can / out_aCa.E_can)
+    response_eca = (np.exp(rr)-1.0)*100.0
+
+    rr = np.log(out_eCa_eL.E_can / out_aCa.E_can)
+    response_eca_ela = (np.exp(rr)-1.0)*100.0
+    print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
+
+    response_eca_ela = np.where(response_eca > 50, np.nan, response_eca_ela)
+    response_eca = np.where(response_eca > 50, np.nan, response_eca)
+
+    ax3.plot(time_day, response_eca, "r-", label="eC$_a$")
+    ax3.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
+    ax3.set_ylim(-50, 50)
+    ax3.set_ylabel("Response of E to CO$_2$ (%)")
+
+
+    from matplotlib.ticker import MaxNLocator
+    ax1.yaxis.set_major_locator(MaxNLocator(5))
+
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    plt.setp(ax2.get_xticklabels(), visible=False)
 
     fig.autofmt_xdate()
     fig.savefig("blah.png", bbox_inches='tight', pad_inches=0.1)
