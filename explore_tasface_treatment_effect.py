@@ -298,12 +298,12 @@ if __name__ == "__main__":
 
     rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
     response_eca_ela = (np.exp(rr)-1.0)*100.0
-    print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
+
 
     #response = ((out_eCa.An_can/out_aCa.An_can)-1.0)*100.
     response_eca_ela = np.where(response_eca > 100, np.nan, response_eca_ela)
     response_eca = np.where(response_eca > 100, np.nan, response_eca)
-
+    print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
 
     ax2.plot(time_day, response_eca, "r-", label="eC$_a$")
     ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
@@ -315,10 +315,11 @@ if __name__ == "__main__":
 
     rr = np.log(out_eCa_eL.E_can / out_aCa.E_can)
     response_eca_ela = (np.exp(rr)-1.0)*100.0
-    print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
+
 
     response_eca_ela = np.where(response_eca > 50, np.nan, response_eca_ela)
     response_eca = np.where(response_eca > 50, np.nan, response_eca)
+    print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
 
     ax3.plot(time_day, response_eca, "r-", label="eC$_a$")
     ax3.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
