@@ -283,7 +283,7 @@ if __name__ == "__main__":
 
     ax1.plot(time_day, out_aCa.sw, "b-", label="aC$_a$")
     ax1.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
-    ax1.plot(time_day, out_eCa_eL.sw, "g--", label="eC$_a$ + eC$_{LAI}$")
+    ax1.plot(time_day, out_eCa_eL.sw, "g--", label="eC$_a$ + e$_{LAI}$")
     ax1.legend(numpoints=1, loc="best", frameon=False)
 
     ax1.set_ylabel("SWC (m$^{3}$ m$^{-3}$)")
@@ -297,11 +297,11 @@ if __name__ == "__main__":
 
     rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
     response_eca_ela = (np.exp(rr)-1.0)*100.0
-
+    print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
     #response = ((out_eCa.An_can/out_aCa.An_can)-1.0)*100.
     #response = np.where(response > 100, np.nan, response)
     ax2.plot(time_day, response_eca, "r-", label="eC$_a$")
-    ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + eC$_{LAI}$")
+    ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
     ax2.set_ylim(0, 100)
 
 
