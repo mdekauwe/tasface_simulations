@@ -215,7 +215,7 @@ class ProfitMax(object):
         while True:
             p = self.get_p_leaf(self.e_max, psi_soil) # MPa
             if p < p_crit:
-                e_max *= 2.0
+                self.e_max *= 2.0
             else:
                 break
 
