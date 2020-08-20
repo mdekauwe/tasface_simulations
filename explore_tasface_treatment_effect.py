@@ -263,6 +263,38 @@ if __name__ == "__main__":
     lai *= 1.2
     out_eCa_eL = main(met, lai, soil_volume, theta_sat)
 
+
+    fig = plt.figure(figsize=(9,16))
+    fig.subplots_adjust(hspace=0.1)
+    fig.subplots_adjust(wspace=0.2)
+    plt.rcParams['text.usetex'] = False
+    plt.rcParams['font.family'] = "sans-serif"
+    plt.rcParams['font.sans-serif'] = "Helvetica"
+    plt.rcParams['axes.labelsize'] = 12
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['legend.fontsize'] = 12
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+
+    ax1 = fig.add_subplot(211)
+    ax2 = fig.add_subplot(212)
+
+    ax1.plot(time_day, out_aCa.An_can, "b-")
+    ax1.plot(time_day, out_eCa.An_can, "r-", alpha=0.5)
+    ax1.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
+    ax1.legend(numpoints=1, loc="best", frameon=False)
+
+    ax2.plot(time_day, out_aCa.E_can, "b-")
+    ax2.plot(time_day, out_eCa.E_can, "r-", alpha=0.5)
+    ax2.set_ylabel("E (mm d$^{-1}$)")
+
+    plt.setp(ax1.get_xticklabels(), visible=False)
+
+    fig.autofmt_xdate()
+    fig.savefig("normal_A_E.png", bbox_inches='tight', pad_inches=0.1)
+
+
+
     fig = plt.figure(figsize=(9,16))
     fig.subplots_adjust(hspace=0.1)
     fig.subplots_adjust(wspace=0.2)

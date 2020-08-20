@@ -20,11 +20,11 @@ import random
 import math
 
 import constants as c
-from photosynthesis import get_a_ci
 from penman_monteith_leaf import PenmanMonteith
 from radiation import spitters
 from radiation import calculate_absorbed_radiation
 from radiation import calculate_cos_zenith, calc_leaf_to_canopy_scalar
+from sperry_optimisation import ProfitMax
 
 __author__  = "Martin De Kauwe"
 __version__ = "1.0 (09.11.2018)"
@@ -46,8 +46,8 @@ class Canopy(object):
 
 
     def main(self, tair, par, vpd, wind, pressure, Ca, doy, hod,
-             lai, psi_soil, kmax, b_plant, c_plant, rnet=None, Vcmax25=None,
-             Jmax25=None, beta=None):
+             lai, psi_soil, Kmax, b_plant, c_plant, hours_in_day,
+             rnet=None, Vcmax25=None, Jmax25=None, beta=None):
         """
         Parameters:
         ----------
@@ -84,11 +84,12 @@ class Canopy(object):
         et : float
             transpiration (mol H2O m-2 s-1)
         """
-
+        S = ProfitMax(Vcmax25, Jmax25, Kmax, b_plant, c_plant, hours_in_day)
         PM = PenmanMonteith()
 
         An = np.zeros(2) # sunlit, shaded
         gsc = np.zeros(2)  # sunlit, shaded
+        gsw = np.zeros(2)  # sunlit, shaded
         et = np.zeros(2) # sunlit, shaded
         Tcan = np.zeros(2) # sunlit, shaded
         lai_leaf = np.zeros(2)
@@ -96,7 +97,8 @@ class Canopy(object):
         tcanopy = np.zeros(2)
 
         opt_a = np.zeros(2)
-        opt_g = np.zeros(2)
+        opt_gsw = np.zeros(2)
+        opt_gsc = np.zeros(2)
         opt_e = np.zeros(2)
         opt_p = np.zeros(2)
 
@@ -144,61 +146,36 @@ class Canopy(object):
                     if scalex[ileaf] > 0.:
 
                         (opt_a[ileaf],
-                         opt_g[ileaf],
+                         opt_gsw[ileaf],
+                         opt_gsc[ileaf],
                          opt_e[ileaf],
-                         opt_p[ileaf]) = self.sperry_optimisation(psi_soil,
-                                                                  dleaf, Cs,
-                                                                  Tleaf,
-                                                                  apar[ileaf],
-                                                                  press,
-                                                                  lai_leaf[ileaf],
-                                                                  Vcmax25,
-                                                                  Jmax25, kmax,
-                                                                  b_plant, c_plant,
-                                                                  scalex[ileaf])
+                         opt_p[ileaf]) = S.optimisation(psi_soil, dleaf, Cs,
+                                                        Tleaf, apar[ileaf],
+                                                        press, lai_leaf[ileaf],
+                                                        scalex[ileaf])
 
-                        print("here")
-                        print(opt_a[ileaf], opt_g[ileaf])
+
+                        An[ileaf] = opt_a[ileaf]
+                        gsw[ileaf] = opt_gsw[ileaf]
+                        gsc[ileaf] = opt_gsc[ileaf]
+                        et[ileaf] = opt_e[ileaf]
+
+                        #print("here")
+                        #print(opt_a[ileaf], opt_g[ileaf], et[ileaf])
 
                         # Put Manon's funcs in
                         # Calc leaf temp
 
-
-
-
-                        sys.exit()
-
-                        #(An[ileaf],
-                        # gsc[ileaf]) = F.photosynthesis(self.p, Cs=Cs,
-                        #                                Tleaf=Tleaf_K,
-                        #                                Par=apar[ileaf],
-                        #                                vpd=dleaf,
-                        #                                scalex=scalex[ileaf],
-                        #                                Vcmax25=Vcmax25,
-                        ##                                Jmax25=Jmax25,
-                        #                                beta=beta)
                     else:
                         An[ileaf], gsc[ileaf] = 0., 0.
 
-                    # Calculate new Tleaf, dleaf, Cs
-                    (new_tleaf, et[ileaf],
-                     le_et, gbH, gw) = self.calc_leaf_temp(self.p, PM, Tleaf,
-                                                           tair, gsc[ileaf],
-                                                           None, vpd,
-                                                           pressure, wind,
-                                                           rnet=qcan[ileaf],
-                                                           lai=lai_leaf[ileaf])
+                    # Calculate new Tleaf, dleaf, Cs ... need to fix
 
-                    gbc = gbH * c.GBH_2_GBC
-                    if gbc > 0.0 and An[ileaf] > 0.0:
-                        Cs = Ca - An[ileaf] / gbc # boundary layer of leaf
-                    else:
-                        Cs = Ca
+                    new_tleaf = Tleaf + 0.01
+                    dleaf = vpd
 
-                    if np.isclose(et[ileaf], 0.0) or np.isclose(gw, 0.0):
-                        dleaf = vpd
-                    else:
-                        dleaf = (et[ileaf] * pressure / gw) * c.PA_2_KPA # kPa
+
+
 
                     # Check for convergence...?
                     if math.fabs(Tleaf - new_tleaf) < 0.02:
@@ -208,7 +185,7 @@ class Canopy(object):
                     if iter > self.iter_max:
                         #raise Exception('No convergence: %d' % (iter))
                         An[ileaf] = 0.0
-                        gsc[ileaf] = 0.0
+                        gsw[ileaf] = 0.0
                         et[ileaf] = 0.0
                         break
 
@@ -221,177 +198,8 @@ class Canopy(object):
 
         return (An, et, Tcan, apar, lai_leaf)
 
-    def sperry_optimisation(self, psi_soil, vpd, ca, tair, par, press, lai,
-                            Vcmax25, Jmax25, kmax, b_plant, c_plant, scalex):
-        """
-        Optimise A, g assuming a single whole-plant vulnerability. Note e to gs
-        assumes perfect coupling and no energy balance.
-
-        Parameters:
-        -----------
-        psi_soil : float
-            soil water potential, MPa
-        vpd : float
-            vapour pressure deficit, kPa
-        tair : float
-            air temperature, deg C
-        par : float
-            photosynthetically active radiation, umol m-2 s-1
-        press : float
-            air pressure, kPa
-
-        Returns:
-        -----------
-        opt_a : float
-            optimised A, umol m-2 s-1
-        opt_gw : float
-            optimised gw, mol H2O m-2 s-1
-        opt_e : float
-            optimised E, mmol H2O m-2 s-1
-        opt_p : float
-            optimised p_leaf (really total plant), MPa
-        """
-
-        # kg H2O 30 min-1 m-2 (leaf area)
-        e_crit = self.get_e_crit(psi_soil, kmax, b_plant, c_plant)
-
-        de = 1.0
-
-        all_e = np.zeros(0)
-        all_k = np.zeros(0)
-        all_a = np.zeros(0)
-        all_p = np.zeros(0)
-        all_g = np.zeros(0)
-
-        laba = 1000.
-
-        for i in range(101):
-
-            # Vary e from 0 to e_crit (0.01 is just partioning step)
-            e = i * 0.01 * e_crit
-            p = self.get_p_leaf(e, psi_soil, kmax, b_plant, c_plant)
-
-            #sys.exit()
-            # Convert e (kg m-2 30min-1) leaf to mol H2O m-2 s-1
-            if e > 0.0:
-
-                #emol = e * (c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HLFHR_2_SEC / laba)
-                emol = e * (c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HR_2_SEC / laba)
-
-                # assume perfect coupling
-
-                gh = emol / vpd * press  # mol H20 m-2 s-1
-                #print(emol, gh, vpd, press)
-
-                gc = gh * c.GSW_2_GSC
-                g = gc * (1.0 / press * c.KPA_2_PA) # convert to Pa
-            else:
-                emol = 0.0
-                gh = 0.0
-                gc = 0.0
-                g  = 0.0
 
 
-
-            ci,a = get_a_ci(Vcmax25, Jmax25, 2.5, g, ca, tair, par, scalex)
-
-            e_de = e + de
-            p_de = self.get_p_leaf(e_de, psi_soil, kmax, b_plant, c_plant)
-            k = de / (p_de - p)
-
-            all_k = np.append(all_k, k)
-            all_a = np.append(all_a, a)
-            all_p = np.append(all_p, p)
-            all_e = np.append(all_e, emol * c.mol_2_mmol)
-            all_g = np.append(all_g, gc * c.GSC_2_GSW)
-
-        # Locate maximum profit
-        gain = all_a / np.max(all_a)
-        risk = 1.0 - all_k / np.max(all_k)
-        profit = gain - risk
-        idx = np.argmax(profit)
-        opt_a = all_a[idx]
-        opt_gw = all_g[idx]
-        opt_e = all_e[idx]
-        opt_p = all_p[idx]
-
-        return opt_a, opt_gw, opt_e, opt_p
-
-    def get_p_leaf(self, transpiration, psi_soil, kmax, b_plant, c_plant):
-        """
-        Integrate vulnerability curve across soil–plant system. This is a
-        simplification, as opposed to splitting between root-zone, stem & leaf.
-
-        Parameters:
-        -----------
-        transpiration : float
-            kg H2O 30 min-1 m-2 (leaf area)
-        psi_soil : float
-            soil water potential, MPa
-        Returns:
-        -----------
-        p_leaf : float
-            integrated vulnerability curve, MPa
-        """
-        dp = 0.0
-        p = psi_soil # MPa
-        N = 20 # P range
-        for i in range(N): # iterate through the P range
-
-            # Vulnerability to cavitation
-            weibull = np.exp(-1.0 * (p / b_plant)**c_plant)
-
-            # Hydraulic conductance of the element, including vulnerability to
-            # cavitation
-            k = max(1E-12, kmax * weibull * float(N))
-            dp += transpiration / k # should have a gravity, height addition
-            p = psi_soil + dp
-
-        p_leaf = p
-
-        # MPa
-        return p_leaf
-
-    def get_e_crit(self, psi_soil, kmax, b_plant, c_plant):
-        """
-        Calculate the maximal E beyond which the tree desiccates due to
-        hydraulic failure (e_crit)
-        Parameters:
-        -----------
-        psi_soil : float
-            soil water potential, MPa
-        Returns:
-        -----------
-        e_crit : float
-            kg H2O 30 min-1 m-2 (basal area)
-        """
-
-        # P at Ecrit, beyond which tree desiccates
-        p_crit = b_plant * np.log(1000.0) ** (1.0 / c_plant) # MPa
-        e_min = 0.0
-        e_max = 100.0
-        e_crit = 50.0
-
-        while True:
-            p = self.get_p_leaf(e_max, psi_soil, kmax, b_plant, c_plant) # MPa
-            if p < p_crit:
-                e_max *= 2.0
-            else:
-                break
-
-        while True:
-            e = 0.5 * (e_max + e_min)
-            p = self.get_p_leaf(e, psi_soil, kmax, b_plant, c_plant)
-            if abs(p - p_crit) < 1E-3 or (e_max - e_min) < 1E-3:
-                e_crit = e
-                break
-            if p > p_crit:
-                e_max = e
-            else:
-                e_min = e
-
-        # kg H2O 30 min-1 m-2 (leaf area)
-        return e_crit
 
     def calc_leaf_temp(self, p, PM=None, tleaf=None, tair=None, gsc=None,
                        par=None, vpd=None, pressure=None, wind=None, rnet=None,

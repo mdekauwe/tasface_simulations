@@ -24,7 +24,11 @@ from radiation import calculate_absorbed_radiation
 from two_leaf_opt import Canopy as TwoLeaf
 
 
-def main(met, lai, soil_volume, theta_sat, psi_e, b, kmax, b_plant, c_plant):
+def main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant, c_plant):
+
+
+    # kg timestep (e.g. 30 min-1)-1 MPa-1 m-2
+    Kmax *= c.MMOL_2_MOL * c.MOL_WATER_2_G_WATER * c.G_TO_KG * c.SEC_2_HR
 
     T = TwoLeaf(p)
 
@@ -41,6 +45,7 @@ def main(met, lai, soil_volume, theta_sat, psi_e, b, kmax, b_plant, c_plant):
     hour_cnt = 1 # hour count
     day_cnt = 0
     while i < len(met):
+        print("%d:%d\n" % (i, len(met)))
         year = met.index.year[i]
         doy = met.doy[i]
         hod = met.hod[i] + 1
@@ -52,11 +57,13 @@ def main(met, lai, soil_volume, theta_sat, psi_e, b, kmax, b_plant, c_plant):
             beta = calc_beta(out.sw[day_cnt-1])
             psi_soil = out.psi_soil[day_cnt-1]
 
+
+
         (An, et, Tcan,
          apar, lai_leaf) = T.main(met.tair[i], met.par[i], met.vpd[i],
                                   met.wind[i], met.press[i], met.ca[i],
-                                  doy, hod, lai[i], psi_soil, kmax, b_plant,
-                                  c_plant, Vcmax25=p.Vcmax25,
+                                  doy, hod, lai[i], psi_soil, Kmax, b_plant,
+                                  c_plant, hours_in_day, Vcmax25=p.Vcmax25,
                                   Jmax25=p.Jmax25, beta=beta)
 
         if hour_cnt == hours_in_day: # End of the day
@@ -102,7 +109,11 @@ def calc_swp(sw, psi_e, theta_sat, b):
     -----------
     * Duursma et al. (2008) Tree Physiology 28, 265276, eqn 10
     """
-    return psi_e * (sw / theta_sat)**-b # MPa
+
+    if sw < 0.1:
+        return -5.0
+    else:
+        return psi_e * (sw / theta_sat)**-b # MPa
 
 def setup_output_dataframe(ndays, nhours, theta_sat, psi_e, b):
 
@@ -113,8 +124,6 @@ def setup_output_dataframe(ndays, nhours, theta_sat, psi_e, b):
 
     out.sw[0] = theta_sat
     out.psi_soil[0] = calc_swp(out.sw[0], psi_e, theta_sat, b)
-
-    print("ini psi_s:", out.sw[0], out.psi_soil[0])
 
     zero = np.zeros(nhours)
     hour_store = pd.DataFrame({'An_can':zero, 'E_can':zero, 'LAI_can':zero,
@@ -170,6 +179,7 @@ def store_daily(year, doy, idx, store, soil_volume, theta_sat, psi_e, b,
     out.sw[idx] = update_sw_bucket(np.sum(store.delta_sw), prev_sw,
                                    soil_volume, theta_sat)
     out.psi_soil[idx] = calc_swp(out.sw[idx], psi_e, theta_sat, b)
+
 
 def update_sw_bucket(delta_sw, sw_prev, soil_volume, theta_sat):
     """
@@ -288,21 +298,57 @@ if __name__ == "__main__":
     theta_sat = 0.31
     psi_e = -0.8 * c.KPA_2_MPA   # Sand, MPa
     b = 6.
-    kmax = 10.0   # whole tree conductance
-    b_plant = 2.0  # shape param
-    c_plant = 5.0  # shape param
+    # whole plant max. hydraulic conductance without cavitation
+    # kg timestep (e.g. 30 min-1)-1 MPa-1 m-2
+    #Kmax = 1000.0
 
-    out_aCa = main(met, lai, soil_volume, theta_sat, psi_e, b, kmax, b_plant,
+    #Kmax = 1.5 # mmol m-2 s-1 MPa-1, Manon Fig 10
+    Kmax = 0.7 # mmol m-2 s-1 MPa-1, Manon Fig 10
+    b_plant = 4.0  # sensitivity of VC, MPa
+    c_plant = 2.0  # shape of VC, [-]
+
+
+    out_aCa = main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant,
                    c_plant)
 
     met.ca *= 1.5
-    out_eCa = main(met, lai, soil_volume, theta_sat, psi_e, b, kmax, b_plant,
+    out_eCa = main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant,
                    c_plant)
 
 
-    lai *= 1.2
-    out_eCa_eL = main(met, lai, soil_volume, theta_sat, psi_e, b, kmax, b_plant,
-                      c_plant)
+    #lai *= 1.2
+    #out_eCa_eL = main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant,
+    #                  c_plant)
+
+    fig = plt.figure(figsize=(9,16))
+    fig.subplots_adjust(hspace=0.1)
+    fig.subplots_adjust(wspace=0.2)
+    plt.rcParams['text.usetex'] = False
+    plt.rcParams['font.family'] = "sans-serif"
+    plt.rcParams['font.sans-serif'] = "Helvetica"
+    plt.rcParams['axes.labelsize'] = 12
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['legend.fontsize'] = 12
+    plt.rcParams['xtick.labelsize'] = 12
+    plt.rcParams['ytick.labelsize'] = 12
+
+    ax1 = fig.add_subplot(211)
+    ax2 = fig.add_subplot(212)
+
+    ax1.plot(time_day, out_aCa.An_can, "b-")
+    ax1.plot(time_day, out_eCa.An_can, "r-", alpha=0.5)
+    ax1.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
+    ax1.legend(numpoints=1, loc="best", frameon=False)
+
+    ax2.plot(time_day, out_aCa.E_can, "b-")
+    ax2.plot(time_day, out_eCa.E_can, "r-", alpha=0.5)
+    ax2.set_ylabel("E (mm d$^{-1}$)")
+
+    plt.setp(ax1.get_xticklabels(), visible=False)
+
+    fig.autofmt_xdate()
+    fig.savefig("opt_A_E.png", bbox_inches='tight', pad_inches=0.1)
+
 
     fig = plt.figure(figsize=(9,16))
     fig.subplots_adjust(hspace=0.1)
@@ -325,7 +371,7 @@ if __name__ == "__main__":
 
     ax1.plot(time_day, out_aCa.sw, "b-", label="aC$_a$")
     ax1.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
-    ax1.plot(time_day, out_eCa_eL.sw, "g-", label="eC$_a$ + e$_{LAI}$")
+    #ax1.plot(time_day, out_eCa_eL.sw, "g-", label="eC$_a$ + e$_{LAI}$")
     ax1.legend(numpoints=1, loc="best", frameon=False)
 
     ax1.set_ylabel("SWC (m$^{3}$ m$^{-3}$)")
@@ -337,33 +383,33 @@ if __name__ == "__main__":
     rr = np.log(out_eCa.An_can / out_aCa.An_can)
     response_eca = (np.exp(rr)-1.0)*100.0
 
-    rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
-    response_eca_ela = (np.exp(rr)-1.0)*100.0
+    #rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
+    #response_eca_ela = (np.exp(rr)-1.0)*100.0
 
 
     #response = ((out_eCa.An_can/out_aCa.An_can)-1.0)*100.
-    response_eca_ela = np.where(response_eca > 100, np.nan, response_eca_ela)
+    #response_eca_ela = np.where(response_eca > 100, np.nan, response_eca_ela)
     response_eca = np.where(response_eca > 100, np.nan, response_eca)
-    print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
+    #print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
 
     ax2.plot(time_day, response_eca, "r-", label="eC$_a$")
-    ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
+    #ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
     ax2.set_ylim(0, 100)
     ax2.set_ylabel("Response of A to CO$_2$ (%)")
 
     rr = np.log(out_eCa.E_can / out_aCa.E_can)
     response_eca = (np.exp(rr)-1.0)*100.0
 
-    rr = np.log(out_eCa_eL.E_can / out_aCa.E_can)
-    response_eca_ela = (np.exp(rr)-1.0)*100.0
+    #rr = np.log(out_eCa_eL.E_can / out_aCa.E_can)
+    #response_eca_ela = (np.exp(rr)-1.0)*100.0
 
 
-    response_eca_ela = np.where(response_eca > 50, np.nan, response_eca_ela)
+    #response_eca_ela = np.where(response_eca > 50, np.nan, response_eca_ela)
     response_eca = np.where(response_eca > 50, np.nan, response_eca)
-    print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
+    #print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
 
     ax3.plot(time_day, response_eca, "r-", label="eC$_a$")
-    ax3.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
+    #ax3.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
     ax3.set_ylim(-50, 50)
     ax3.set_ylabel("Response of E to CO$_2$ (%)")
 
@@ -375,4 +421,4 @@ if __name__ == "__main__":
     plt.setp(ax2.get_xticklabels(), visible=False)
 
     fig.autofmt_xdate()
-    fig.savefig("blah.png", bbox_inches='tight', pad_inches=0.1)
+    fig.savefig("blah_opt.png", bbox_inches='tight', pad_inches=0.1)
