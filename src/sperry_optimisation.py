@@ -80,7 +80,7 @@ class ProfitMax(object):
         if self.hours_in_day == 24:
             conv = c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HR_2_SEC
         else:
-            conv = c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HLFHR_2_SEC 
+            conv = c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HLFHR_2_SEC
 
         de = 1.0
         step = 0.01
@@ -90,7 +90,7 @@ class ProfitMax(object):
             # Increment transpiration from zero (no cuticular conductance) to
             # its maximum (e_crit)
             e_leaf = i * step * e_crit
-            p = self.get_p_leaf(eleaf, psi_soil)
+            p = self.get_p_leaf(e_leaf, psi_soil)
 
             #sys.exit()
             # Convert e (kg m-2 30min-1) leaf to mol H2O m-2 s-1
