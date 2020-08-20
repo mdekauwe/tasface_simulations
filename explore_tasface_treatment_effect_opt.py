@@ -109,11 +109,17 @@ def calc_swp(sw, psi_e, theta_sat, b):
     -----------
     * Duursma et al. (2008) Tree Physiology 28, 265276, eqn 10
     """
+    psi_soil_min = -20.0
+    theta_min = 1E-03
 
-    if sw < 0.1:
-        return -5.0
+    if sw < theta_min:
+        psi_soil = psi_soil_min
     else:
-        return psi_e * (sw / theta_sat)**-b # MPa
+        psi_soil = psi_e * (sw / theta_sat)**-b
+        if psi_soil < -20:
+            psi_soil = psi_soil_min
+
+    return psi_soil   # MPa
 
 def setup_output_dataframe(ndays, nhours, theta_sat, psi_e, b):
 
@@ -304,7 +310,7 @@ if __name__ == "__main__":
 
     #Kmax = 1.5 # mmol m-2 s-1 MPa-1, Manon Fig 10
     Kmax = 0.7 # mmol m-2 s-1 MPa-1, Manon Fig 10
-    b_plant = 4.0  # sensitivity of VC, MPa
+    b_plant = 2.0  # sensitivity of VC, MPa
     c_plant = 2.0  # shape of VC, [-]
 
 
@@ -339,10 +345,12 @@ if __name__ == "__main__":
     ax1.plot(time_day, out_eCa.An_can, "r-", alpha=0.5)
     ax1.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
     ax1.legend(numpoints=1, loc="best", frameon=False)
+    ax1.set_ylim(0, 20)
 
     ax2.plot(time_day, out_aCa.E_can, "b-")
     ax2.plot(time_day, out_eCa.E_can, "r-", alpha=0.5)
     ax2.set_ylabel("E (mm d$^{-1}$)")
+    ax2.set_ylim(0, 5)
 
     plt.setp(ax1.get_xticklabels(), visible=False)
 
@@ -371,6 +379,7 @@ if __name__ == "__main__":
 
     ax1.plot(time_day, out_aCa.sw, "b-", label="aC$_a$")
     ax1.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
+    ax1.set_ylim(0.05, 0.35)
     #ax1.plot(time_day, out_eCa_eL.sw, "g-", label="eC$_a$ + e$_{LAI}$")
     ax1.legend(numpoints=1, loc="best", frameon=False)
 

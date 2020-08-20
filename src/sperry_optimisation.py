@@ -65,86 +65,76 @@ class ProfitMax(object):
         opt_p : float
             optimised p_leaf (really total plant), MPa
         """
+        niter = 101
 
-        all_e = np.zeros(0)
-        all_k = np.zeros(0)
-        all_a = np.zeros(0)
-        all_p = np.zeros(0)
-        all_g = np.zeros(0)
+        store_e = np.zeros(0)
+        store_k = np.zeros(0)
+        store_a = np.zeros(0)
+        store_p = np.zeros(0)
+        store_g = np.zeros(0)
 
         # Transpiration (per unit leaf) max before hydraulic failure (e_crit)
         # kg H2O 30 min-1 m-2 (leaf)
         e_crit = self.get_e_crit(psi_soil)
 
+        if self.hours_in_day == 24:
+            conv = c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HR_2_SEC
+        else:
+            conv = c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HLFHR_2_SEC *
+
         de = 1.0
         step = 0.01
 
-        for i in range(101):
+        for i in range(niter):
 
             # Increment transpiration from zero (no cuticular conductance) to
             # its maximum (e_crit)
-            e = i * step * e_crit
-            p = self.get_p_leaf(e, psi_soil)
+            e_leaf = i * step * e_crit
+            p = self.get_p_leaf(eleaf, psi_soil)
 
             #sys.exit()
             # Convert e (kg m-2 30min-1) leaf to mol H2O m-2 s-1
-            if e > 0.0:
+            if e_leaf > 0.0:
 
-                if self.hours_in_day == 24:
-                    #emol = e * (c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HR_2_SEC  / self.laba)
-
-                    emol = e * (c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HR_2_SEC) * lai
-                    #print(emol, e * (c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HLFHR_2_SEC / self.laba))
-
-                else:
-                    #emol = e * (c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HLFHR_2_SEC / self.laba)
-                    #Need to scale per leaf flux to sunlit/shaded LAI
-                    emol = e * (c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HLFHR_2_SEC) * lai
+                # Scale Eleaf to Ecanopy, mol H20 m-2 s-1
+                e_canopy = e_leaf * conv * lai
 
                 # assume perfect coupling
-                gsw = emol / vpd * press  # mol H20 m-2 s-1
+                gsw = e_canopy / vpd * press  # mol H20 m-2 s-1
                 gsc = gsw * c.GSW_2_GSC   # mol CO2 m-2 s-1
                 g = gsc * (1.0 / press * c.KPA_2_PA) # convert to umol Pa-1
             else:
-                emol = 0.0
+                e_canopy = 0.0
                 gsw = 0.0
                 gsc = 0.0
                 g  = 0.0
-
 
             # One issue here is that this function will scale up A via scalex,
             # but not gs
             ci,a = get_a_ci(self.Vcmax25, self.Jmax25, 2.5, g, ca, tair,
                             par, scalex)
 
-            # Diagnose what the actual gsc scaled up is then...don't need to
-            # if you scale the E above
-            #gsc = An / (Cs - Ci)
-            #gsw = gsc * c.GSC_2_GSW
-
-
-
-            e_de = e + de
+            e_de = e_leaf + de
             p_de = self.get_p_leaf(e_de, psi_soil)
             k = de / (p_de - p)
 
-            all_k = np.append(all_k, k)
-            all_a = np.append(all_a, a)
-            all_p = np.append(all_p, p)
-            all_e = np.append(all_e, emol)
-            all_g = np.append(all_g, gsw)
+            store_k = np.append(store_k, k)
+            store_a = np.append(store_a, a)
+            store_p = np.append(store_p, p)
+            store_e = np.append(store_e, e_canopy)
+            store_g = np.append(store_g, gsw)
 
         # Locate maximum profit
-        gain = all_a / np.max(all_a)
-        risk = 1.0 - all_k / np.max(all_k)
+        gain = store_a / np.max(store_a)
+        risk = 1.0 - store_k / np.max(store_k)
         profit = gain - risk
 
         idx = np.argmax(profit)
-        opt_a = all_a[idx]
-        opt_gsw = all_g[idx]
+        opt_a = store_a[idx]
+        opt_gsw = store_g[idx]
         opt_gsc = opt_gsw * c.GSW_2_GSC   # mol CO2 m-2 s-1
-        opt_e = all_e[idx]
-        opt_p = all_p[idx]
+        opt_e = store_e[idx]
+        opt_p = store_p[idx]
 
         return opt_a, opt_gsw, opt_gsc, opt_e, opt_p
 
@@ -202,14 +192,11 @@ class ProfitMax(object):
         e_crit : float
             kg H2O timestep (e.g. 30 min-1)-1 m-2 (leaf area)
         """
+        tol = 1E-3
 
         # P at Ecrit, beyond which tree desiccates
         # 1000 <- assumption that p_crit is when kh is 0.1% of the maximum, fix
         p_crit = self.b_plant * np.log(1000.0)**(1.0 / self.c_plant) # MPa
-
-        #e_min = 0.0    # kg H2O timestep (e.g. 30 min-1)-1 m-2 (leaf)
-        #e_max = 100.0  # kg H2O timestep (e.g. 30 min-1)-1 m-2 (leaf)
-        #e_crit = 50.0  # kg H2O timestep (e.g. 30 min-1)-1 m-2 (leaf)
 
         if self.hours_in_day == 24:
             e_min = 0.0
@@ -230,9 +217,11 @@ class ProfitMax(object):
         while True:
             e = 0.5 * (e_max + e_min)
             p = self.get_p_leaf(e, psi_soil)
-            if abs(p - p_crit) < 1E-3 or (e_max - e_min) < 1E-3:
+
+            if abs(p - p_crit) < tol or (e_max - e_min) < tol:
                 e_crit = e
                 break
+
             if p > p_crit:
                 e_max = e
             else:

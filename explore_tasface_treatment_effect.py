@@ -283,10 +283,12 @@ if __name__ == "__main__":
     ax1.plot(time_day, out_eCa.An_can, "r-", alpha=0.5)
     ax1.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
     ax1.legend(numpoints=1, loc="best", frameon=False)
+    ax1.set_ylim(0, 20)
 
     ax2.plot(time_day, out_aCa.E_can, "b-")
     ax2.plot(time_day, out_eCa.E_can, "r-", alpha=0.5)
     ax2.set_ylabel("E (mm d$^{-1}$)")
+    ax2.set_ylim(0, 5)
 
     plt.setp(ax1.get_xticklabels(), visible=False)
 
@@ -318,6 +320,7 @@ if __name__ == "__main__":
     ax1.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
     ax1.plot(time_day, out_eCa_eL.sw, "g-", label="eC$_a$ + e$_{LAI}$")
     ax1.legend(numpoints=1, loc="best", frameon=False)
+    ax1.set_ylim(0.05, 0.35)
 
     ax1.set_ylabel("SWC (m$^{3}$ m$^{-3}$)")
 
