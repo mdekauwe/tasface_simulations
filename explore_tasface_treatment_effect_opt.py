@@ -72,8 +72,7 @@ def main(p, met, lai):
                                   doy, hod, lai[i], psi_soil)
 
         if hour_cnt == hours_in_day: # End of the day
-            store_daily(year, doy, day_cnt, store, soil_volume, theta_sat,
-                        psi_e, b, beta, out)
+            store_daily(year, doy, day_cnt, store, beta, out, p)
 
             hour_cnt = 1
             day_cnt += 1
@@ -161,8 +160,7 @@ def store_hourly(idx, An, et, lai_leaf, precip, store, timestep_sec):
 
     store.delta_sw[idx] = precip - store.E_can[idx]
 
-def store_daily(year, doy, idx, store, theta_sat, psi_e, b,
-                beta, out):
+def store_daily(year, doy, idx, store, beta, out, p):
 
     out.year[idx] = year
     out.doy[idx] = doy
@@ -172,7 +170,7 @@ def store_daily(year, doy, idx, store, theta_sat, psi_e, b,
     out.beta[idx] = beta
 
     if idx-1 == -1:
-        prev_sw = theta_sat
+        prev_sw = p.theta_sat
     else:
         prev_sw = out.sw[idx-1]
 
