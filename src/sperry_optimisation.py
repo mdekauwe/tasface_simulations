@@ -213,24 +213,24 @@ class ProfitMax(object):
 
 
         while True:
-            p = self.get_p_leaf(self.e_max, psi_soil) # MPa
-            if p < p_crit:
+            psi_leaf = self.get_p_leaf(self.e_max, psi_soil) # MPa
+            if psi_leaf < p_crit:
                 self.e_max *= 2.0
             else:
                 break
 
         while True:
-            e = 0.5 * (self.e_max + self.e_min)
-            p = self.get_p_leaf(e, psi_soil)
+            e_leaf = 0.5 * (self.e_max + self.e_min)
+            psi_leaf = self.get_p_leaf(e_leaf, psi_soil)
 
-            if abs(p - p_crit) < tol or (self.e_max - self.e_min) < tol:
-                e_crit = e
+            if abs(psi_leaf - p_crit) < tol or (self.e_max - self.e_min) < tol:
+                e_crit = e_leaf
                 break
 
-            if p > p_crit:
-                self.e_max = e
+            if psi_leaf > p_crit:
+                self.e_max = e_leaf
             else:
-                self.e_min = e
+                self.e_min = e_leaf
 
         # kg H2O 30 min-1 m-2 (leaf area)
         return e_crit
