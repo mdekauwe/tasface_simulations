@@ -211,7 +211,7 @@ class ProfitMax(object):
             e_crit = 0.1 # ~5 mm/day to kg m-2 30 min-1
 
         # Canopy xylem pressure (P_crit) at Ecrit, beyond which tree desiccates
-        # P_crit is 0.1% of the maximum
+        # P_crit is 0.1% of the maximum, MPa
         p_crit = self.b_plant * \
                     np.log(self.Kmax / (0.1 * self.Kmax))**(1.0 / self.c_plant)
 
