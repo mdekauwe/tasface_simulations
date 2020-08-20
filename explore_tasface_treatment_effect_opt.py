@@ -15,6 +15,8 @@ import pandas as pd
 import sys
 import math
 import xarray as xr
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 sys.path.append('src')
 
