@@ -167,9 +167,8 @@ class ProfitMax(object):
 
         for i in range(N): # iterate through the P range
 
-            # Vulnerability to cavitation
-            weibull = np.exp(-1.0 * \
-                            (p / self.b_plant)**self.c_plant)
+            # Vulnerability to cavitation (-)
+            weibull = self.get_xylem_vulnerability(p)
 
             # Whole plant hydraulic conductance, including vulnerability to
             # cavitation, kg timestep (e.g. 30 min-1)-1 MPa-1 m-2
@@ -182,6 +181,23 @@ class ProfitMax(object):
         p_leaf = p # MPa
 
         return p_leaf
+
+    def get_xylem_vulnerability(self, p):
+        """
+        Calculate the vulnerability to cavitation using a Weibull function
+
+        Parameters:
+        -----------
+        p : float
+            leaf water potential, MPa
+
+        Returns:
+        -----------
+        weibull : float
+            vulnerability [-]
+
+        """
+        return np.exp(-1.0 * (p / self.b_plant)**self.c_plant)
 
     def get_e_crit(self, psi_soil):
         """
@@ -222,6 +238,8 @@ class ProfitMax(object):
                 e_max *= 2.0
             else:
                 break
+
+        sys.exit()
 
         while True:
             e_leaf = 0.5 * (e_max + e_min)
