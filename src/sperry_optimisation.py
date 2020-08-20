@@ -86,6 +86,9 @@ class ProfitMax(object):
         # kg H2O 30 min-1 m-2 (leaf)
         e_crit = self.get_e_crit(psi_soil)
 
+        # Logic is based on "postive" psi_soil
+        psi_soil *= -1.
+
         de = 1.0
         step = 0.01
 
@@ -95,7 +98,7 @@ class ProfitMax(object):
             # its maximum (e_crit)
             e_leaf = i * step * e_crit
 
-            # "whole plant" (leaf-xylem) water potential, MPa
+            # Integrated "whole plant" (leaf-xylem) water potential, MPa
             psi_leaf = self.get_p_leaf(e_leaf, psi_soil)
 
             if e_leaf > 0.0:
@@ -125,7 +128,7 @@ class ProfitMax(object):
             k = de / (p_de - psi_leaf)
 
             store_k[i] = k
-            store_p[i] = psi_leaf
+            store_p[i] = psi_leaf # integrated
             store_a_can[i] = a_canopy
             store_e_can[i] = e_canopy
             store_gsw_can[i] = gsw
@@ -140,6 +143,7 @@ class ProfitMax(object):
         opt_gsc_canopy = opt_gsw_canopy * c.GSW_2_GSC   # mol CO2 m-2 s-1
         opt_e_canopy = store_e_can[idx]
         opt_p = store_p[idx]
+        print(opt_p)
 
         return opt_a_canopy, opt_gsw_canopy, opt_gsc_canopy, opt_e_canopy, opt_p
 
@@ -162,7 +166,7 @@ class ProfitMax(object):
         """
         dp = 0.0
         N = 20 # P range
-        p = psi_soil # MPa
+        p = abs(psi_soil) # MPa
         Kmin = 1E-12
 
         for i in range(N): # iterate through the P range
@@ -233,18 +237,16 @@ class ProfitMax(object):
         while True:
             psi_leaf = self.get_p_leaf(e_max, psi_soil) # MPa
 
-            print(psi_leaf, p_crit)
             if psi_leaf < p_crit:
                 e_max *= 2.0
             else:
                 break
 
-        sys.exit()
 
         while True:
             e_leaf = 0.5 * (e_max + e_min)
             psi_leaf = self.get_p_leaf(e_leaf, psi_soil)
-            print(psi_leaf, p_crit)
+
             if abs(psi_leaf - p_crit) < tol or (e_max - e_min) < tol:
                 e_crit = e_leaf
                 break
