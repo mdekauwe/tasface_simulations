@@ -114,14 +114,14 @@ class ProfitMax(object):
                 gsw = e_canopy / vpd * press # mol H20 m-2 s-1
                 gsc = gsw * c.GSW_2_GSC # mol CO2 m-2 s-1
 
+                (ci, a_canopy) = self.get_a_and_ci(gsc, ca, tleafK, par, press,
+                                                   scalex, params, F)
+
             else:
                 e_canopy = 0.0
+                a_canopy = 0.0
                 gsw = 0.0
                 gsc = 0.0
-                g_umol_pa  = 0.0
-
-            (ci, a_canopy) = self.get_a_and_ci(gsc, ca, tleafK, par, press,
-                                               scalex, params, F)
 
             e_de = e_leaf + de
             p_de = self.get_p_leaf(e_de, psi_soil)
