@@ -80,7 +80,7 @@ class ProfitMax(object):
         if self.hours_in_day == 24:
             conv = c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HR_2_SEC
         else:
-            conv = c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HLFHR_2_SEC *
+            conv = c.KG_TO_G * c.G_WATER_2_MOL_WATER * c.HLFHR_2_SEC 
 
         de = 1.0
         step = 0.01

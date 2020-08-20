@@ -310,7 +310,7 @@ if __name__ == "__main__":
 
     #Kmax = 1.5 # mmol m-2 s-1 MPa-1, Manon Fig 10
     Kmax = 0.7 # mmol m-2 s-1 MPa-1, Manon Fig 10
-    b_plant = 2.0  # sensitivity of VC, MPa
+    b_plant = 1.0  # sensitivity of VC, MPa (higher = less sensitive to SW)
     c_plant = 2.0  # shape of VC, [-]
 
 
