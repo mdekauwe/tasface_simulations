@@ -35,6 +35,10 @@ class ProfitMax(object):
         self.met_timestep = met_timestep
         self.timestep_sec = 60. * self.met_timestep
 
+        self.b_plant = p.b_plant
+        self.c_plant = p.c_plant
+        self.Kmax = p.Kmax
+
     def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
         """
@@ -166,11 +170,11 @@ class ProfitMax(object):
 
             # Vulnerability to cavitation
             weibull = np.exp(-1.0 * \
-                            (p / self.p.b_plant)**self.p.c_plant)
+                            (p / self.b_plant)**self.c_plant)
 
             # Whole plant hydraulic conductance, including vulnerability to
             # cavitation, kg timestep (e.g. 30 min-1)-1 MPa-1 m-2
-            Kplant = max(Kmin, self.p.Kmax * weibull * float(N))
+            Kplant = max(Kmin, self.Kmax * weibull * float(N))
 
             # Calculate the pressure drop
             dp += transpiration / Kplant # MPa
@@ -208,8 +212,8 @@ class ProfitMax(object):
 
         # P at Ecrit, beyond which tree desiccates
         # 1000 <- assumption that p_crit is when kh is 0.1% of the maximum, fix
-        p_crit = self.p.b_plant * \
-                        np.log(1000.0)**(1.0 / self.p.c_plant) # MPa
+        p_crit = self.b_plant * \
+                        np.log(1000.0)**(1.0 / self.c_plant) # MPa
 
 
         while True:
