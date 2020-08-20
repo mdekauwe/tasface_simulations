@@ -143,8 +143,7 @@ class ProfitMax(object):
         opt_gsc_canopy = opt_gsw_canopy * c.GSW_2_GSC   # mol CO2 m-2 s-1
         opt_e_canopy = store_e_can[idx]
         opt_p = store_p[idx]
-        print(opt_p)
-
+        
         return opt_a_canopy, opt_gsw_canopy, opt_gsc_canopy, opt_e_canopy, opt_p
 
     def get_p_leaf(self, transpiration, psi_soil):
