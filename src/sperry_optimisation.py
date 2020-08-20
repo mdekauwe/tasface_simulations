@@ -38,6 +38,7 @@ class ProfitMax(object):
         self.b_plant = params.b_plant
         self.c_plant = params.c_plant
         self.Kmax = params.Kmax
+        self.Kcrit = 0.01 * self.Kmax
 
     def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
@@ -210,10 +211,10 @@ class ProfitMax(object):
             e_max = 0.2  # ~10 mm/day to kg m-2 30 min-1
             e_crit = 0.1 # ~5 mm/day to kg m-2 30 min-1
 
-        # Canopy xylem pressure (P_crit) at Ecrit, beyond which tree desiccates
-        # P_crit is 0.1% of the maximum, MPa
+        # Canopy xylem pressure (P_crit) MPa, beyond which tree
+        # desiccates (Ecrit)
         p_crit = self.b_plant * \
-                    np.log(self.Kmax / (0.01 * self.Kmax))**(1.0 / self.c_plant)
+                    np.log(self.Kmax / self.Kcrit)**(1.0 / self.c_plant)
 
         while True:
             psi_leaf = self.get_p_leaf(e_max, psi_soil) # MPa
