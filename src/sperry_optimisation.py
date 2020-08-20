@@ -35,15 +35,6 @@ class ProfitMax(object):
         self.met_timestep = met_timestep
         self.timestep_sec = 60. * self.met_timestep
 
-        if self.met_timestep == 60:
-            self.e_min = 0.0
-            self.e_max = 0.4  # ~10 mm/day to kg m-2 hour-1
-            self.e_crit = 0.2 # ~5 mm/day to kg m-2 hour-1
-        else:
-            self.e_min = 0.0
-            self.e_max = 0.2  # ~10 mm/day to kg m-2 30 min-1
-            self.e_crit = 0.1 # ~5 mm/day to kg m-2 30 min-1
-
     def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
         """
@@ -206,6 +197,15 @@ class ProfitMax(object):
         """
         tol = 1E-3
 
+        if self.met_timestep == 60:
+            e_min = 0.0
+            e_max = 0.4  # ~10 mm/day to kg m-2 hour-1
+            e_crit = 0.2 # ~5 mm/day to kg m-2 hour-1
+        else:
+            e_min = 0.0
+            e_max = 0.2  # ~10 mm/day to kg m-2 30 min-1
+            e_crit = 0.1 # ~5 mm/day to kg m-2 30 min-1
+
         # P at Ecrit, beyond which tree desiccates
         # 1000 <- assumption that p_crit is when kh is 0.1% of the maximum, fix
         p_crit = self.p.b_plant * \
@@ -213,24 +213,24 @@ class ProfitMax(object):
 
 
         while True:
-            psi_leaf = self.get_p_leaf(self.e_max, psi_soil) # MPa
+            psi_leaf = self.get_p_leaf(e_max, psi_soil) # MPa
             if psi_leaf < p_crit:
-                self.e_max *= 2.0
+                e_max *= 2.0
             else:
                 break
 
         while True:
-            e_leaf = 0.5 * (self.e_max + self.e_min)
+            e_leaf = 0.5 * (e_max + e_min)
             psi_leaf = self.get_p_leaf(e_leaf, psi_soil)
 
-            if abs(psi_leaf - p_crit) < tol or (self.e_max - self.e_min) < tol:
+            if abs(psi_leaf - p_crit) < tol or (e_max - e_min) < tol:
                 e_crit = e_leaf
                 break
 
             if psi_leaf > p_crit:
-                self.e_max = e_leaf
+                e_max = e_leaf
             else:
-                self.e_min = e_leaf
+                e_min = e_leaf
 
         # kg H2O 30 min-1 m-2 (leaf area)
         return e_crit
