@@ -303,7 +303,7 @@ if __name__ == "__main__":
     print("Totals - A: %f, E: %f" % \
             (np.sum(out_aCa.An_can), np.sum(out_aCa.E_can)))
 
-    fig = plt.figure(figsize=(9,16))
+    fig = plt.figure(figsize=(9,12))
     fig.subplots_adjust(hspace=0.1)
     fig.subplots_adjust(wspace=0.2)
     plt.rcParams['text.usetex'] = False
