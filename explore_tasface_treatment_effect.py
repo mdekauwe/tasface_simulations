@@ -261,6 +261,8 @@ if __name__ == "__main__":
     lai *= 1.2
     out_eCa_eL = main(p, met, lai)
 
+    print("Totals - A: %f, E: %f" % \
+            (np.sum(out_aCa.An_can), np.sum(out_aCa.E_can)))
 
     fig = plt.figure(figsize=(9,16))
     fig.subplots_adjust(hspace=0.1)
@@ -277,8 +279,8 @@ if __name__ == "__main__":
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212)
 
-    ax1.plot(time_day, out_aCa.An_can, "b-")
-    ax1.plot(time_day, out_eCa.An_can, "r-", alpha=0.5)
+    ax1.plot(time_day, out_aCa.An_can, "b-", label="Ambient")
+    ax1.plot(time_day, out_eCa.An_can, "r-", label="Elevated", alpha=0.5)
     ax1.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
     ax1.legend(numpoints=1, loc="best", frameon=False)
     ax1.set_ylim(0, 20)
