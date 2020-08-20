@@ -35,9 +35,9 @@ class ProfitMax(object):
         self.met_timestep = met_timestep
         self.timestep_sec = 60. * self.met_timestep
 
-        self.b_plant = p.b_plant
-        self.c_plant = p.c_plant
-        self.Kmax = p.Kmax
+        self.b_plant = params.b_plant
+        self.c_plant = params.c_plant
+        self.Kmax = params.Kmax
 
     def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
@@ -211,13 +211,14 @@ class ProfitMax(object):
             e_crit = 0.1 # ~5 mm/day to kg m-2 30 min-1
 
         # Canopy xylem pressure (P_crit) at Ecrit, beyond which tree desiccates
-        # 1000 <- assumption that p_crit is when kh is 0.1% of the maximum, fix
-        p_crit = self.b_plant * \
-                        np.log(1000.0)**(1.0 / self.c_plant) # MPa
-
+        # P_crit is 0.1% of the maximum
+        p_crit = - self.b_plant * \
+                    np.log(self.Kmax / (0.1 * self.Kmax))**(1.0 / self.c_plant)
 
         while True:
             psi_leaf = self.get_p_leaf(e_max, psi_soil) # MPa
+
+            print(psi_leaf, p_crit)
             if psi_leaf < p_crit:
                 e_max *= 2.0
             else:
@@ -226,7 +227,7 @@ class ProfitMax(object):
         while True:
             e_leaf = 0.5 * (e_max + e_min)
             psi_leaf = self.get_p_leaf(e_leaf, psi_soil)
-
+            print(psi_leaf, p_crit)
             if abs(psi_leaf - p_crit) < tol or (e_max - e_min) < tol:
                 e_crit = e_leaf
                 break
