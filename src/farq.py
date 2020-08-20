@@ -74,8 +74,7 @@ class FarquharC3(object):
         self.adjust_for_low_temp = adjust_for_low_temp
 
     def photosynthesis(self, p, Cs=None, Tleaf=None, Par=None, vpd=None,
-                       mult=None, scalex=None, Vcmax25=None,
-                       Jmax25=None, beta=None):
+                       mult=None, scalex=None, beta=None):
         """
         Parameters
         ----------
@@ -110,14 +109,14 @@ class FarquharC3(object):
 
         # Calculate temperature dependancies on Vcmax and Jmax
         if self.peaked_Vcmax:
-            Vcmax = self.peaked_arrh(Vcmax25, p.Eav, Tleaf, p.deltaSv, p.Hdv)
+            Vcmax = self.peaked_arrh(p.Vcmax25, p.Eav, Tleaf, p.deltaSv, p.Hdv)
         else:
-            Vcmax = self.arrh(Vcmax25, p.Eav, Tleaf)
+            Vcmax = self.arrh(p.Vcmax25, p.Eav, Tleaf)
 
         if self.peaked_Jmax:
-            Jmax = self.peaked_arrh(Jmax25, p.Eaj, Tleaf, p.deltaSj, p.Hdj)
+            Jmax = self.peaked_arrh(p.Jmax25, p.Eaj, Tleaf, p.deltaSj, p.Hdj)
         else:
-            Jmax = self.arrh(Jmax25, p.Eaj, Tleaf)
+            Jmax = self.arrh(p.Jmax25, p.Eaj, Tleaf)
 
         # Calculations at 25 degrees C or the measurement temperature
         if p.Rd25 is not None:
@@ -365,6 +364,7 @@ class FarquharC3(object):
         -----------
         * Medlyn et al. 2002, PCE, 25, 1167-1179.
         """
+
         return k25 * np.exp((Ea * (Tk - 298.15)) / (298.15 * c.RGAS * Tk))
 
     def peaked_arrh(self, k25, Ea, Tk, deltaS, Hd):
@@ -526,3 +526,77 @@ class FarquharC3(object):
             param *= (Tc - lower_bound) / (upper_bound - lower_bound)
 
         return param
+
+
+    def photosynthesis_given_ci(self, p, Ci=None, Tleaf=None, Par=None,
+                                scalex=None):
+        """
+        Parameters
+        ----------
+        p : struct
+            contains all the model params
+        Ci : float
+            leaf intercellular CO2 concentration [umol mol-1]
+        Tleaf : float
+            leaf temp [deg K]
+        Par : float
+            photosynthetically active radiation [umol m-2 s-1].
+        scalex : float
+            scaler to transform leaf to big leaf
+
+        Returns:
+        --------
+        An : float
+            Net leaf assimilation rate [umol m-2 s-1]
+        """
+
+        # calculate temp dependancies of MichaelisMenten constants for CO2, O2
+        Km = self.calc_michaelis_menten_constants(p, Tleaf)
+
+        # Effect of temp on CO2 compensation point
+        gamma_star = self.arrh(p.gamstar25, p.Eag, Tleaf)
+
+        # Calculate temperature dependancies on Vcmax and Jmax
+        if self.peaked_Vcmax:
+            Vcmax = self.peaked_arrh(p.Vcmax25, p.Eav, Tleaf, p.deltaSv, p.Hdv)
+        else:
+            Vcmax = self.arrh(p.Vcmax25, p.Eav, Tleaf)
+
+        if self.peaked_Jmax:
+            Jmax = self.peaked_arrh(p.Jmax25, p.Eaj, Tleaf, p.deltaSj, p.Hdj)
+        else:
+            Jmax = self.arrh(p.Jmax25, p.Eaj, Tleaf)
+
+        # Calculations at 25 degrees C or the measurement temperature
+        if p.Ear is not None:
+            Rd = self.calc_resp(Tleaf, p.Q10, p.Rd25, p.Ear)
+        else:
+            Rd = 0.015 * Vcmax
+
+        if self.adjust_for_low_temp:
+            Jmax = self.adj_for_low_temp(Jmax, Tleaf)
+            Vcmax = self.adj_for_low_temp(Vcmax, Tleaf)
+
+        # Scaling from single leaf to canopy, see Wang & Leuning 1998 appendix C
+        if scalex is not None:
+            Rd *= scalex
+            Vcmax *= scalex
+            Jmax *= scalex
+
+        # Rate of electron transport, which is a function of absorbed PAR
+        J = self.calc_electron_transport_rate(p, Par, Jmax)
+        Vj = J / 4.0
+
+        Ac = self.assim(Ci, gamma_star, a1=Vcmax, a2=Km)
+        Aj = self.assim(Ci, gamma_star, a1=Vj, a2=2.0*gamma_star)
+
+        # Hyperbolic minimum.
+        A = -self.quadratic(a=1.0-1E-04, b=Ac+Aj, c=Ac*Aj, large=True)
+
+        # Net photosynthesis
+        An = A - Rd
+
+        if np.isclose(Ci, 0.0):
+            An = 0.0 - Rd
+
+        return (An)

@@ -24,13 +24,10 @@ from radiation import calculate_absorbed_radiation
 from two_leaf_opt import Canopy as TwoLeaf
 
 
-def main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant, c_plant):
+def main(p, met, lai):
 
 
-    # kg timestep (e.g. 30 min-1)-1 MPa-1 m-2
-    Kmax *= c.MMOL_2_MOL * c.MOL_WATER_2_G_WATER * c.G_TO_KG * c.SEC_2_HR
 
-    T = TwoLeaf(p)
 
     days = met.doy
     hod = met.hod
@@ -38,8 +35,18 @@ def main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant, c_plant):
     nhours = len(met)
     hours_in_day = int(nhours / float(ndays))
 
-    out, store = setup_output_dataframe(ndays, hours_in_day, theta_sat,
-                                        psi_e, b)
+    if hours_in_day == 24:
+        met_timestep = 60.
+    else:
+        met_timestep = 30.
+    timestep_sec = 60. * met_timestep
+
+    # kg timestep (e.g. 30 min-1)-1 MPa-1 m-2
+    p.Kmax *= c.MMOL_2_MOL * c.MOL_WATER_2_G_WATER * c.G_TO_KG * timestep_sec
+
+    T = TwoLeaf(params=p, met_timestep=met_timestep)
+
+    out, store = setup_output_dataframe(ndays, hours_in_day, p)
 
     i = 0
     hour_cnt = 1 # hour count
@@ -51,7 +58,7 @@ def main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant, c_plant):
         hod = met.hod[i] + 1
 
         if day_cnt-1 == -1:
-            beta = calc_beta(theta_sat)
+            beta = calc_beta(p.theta_sat)
             psi_soil = out.psi_soil[day_cnt]
         else:
             beta = calc_beta(out.sw[day_cnt-1])
@@ -62,9 +69,7 @@ def main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant, c_plant):
         (An, et, Tcan,
          apar, lai_leaf) = T.main(met.tair[i], met.par[i], met.vpd[i],
                                   met.wind[i], met.press[i], met.ca[i],
-                                  doy, hod, lai[i], psi_soil, Kmax, b_plant,
-                                  c_plant, hours_in_day, Vcmax25=p.Vcmax25,
-                                  Jmax25=p.Jmax25, beta=beta)
+                                  doy, hod, lai[i], psi_soil)
 
         if hour_cnt == hours_in_day: # End of the day
             store_daily(year, doy, day_cnt, store, soil_volume, theta_sat,
@@ -74,7 +79,7 @@ def main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant, c_plant):
             day_cnt += 1
         else:
             store_hourly(hour_cnt-1, An, et, lai_leaf, met.precip[i], store,
-                         hours_in_day)
+                         timestep_sec)
 
             hour_cnt += 1
 
@@ -90,7 +95,7 @@ def calc_beta(theta, theta_fc=0.35, theta_wp=0.1):
 
     return beta
 
-def calc_swp(sw, psi_e, theta_sat, b):
+def calc_swp(p, sw):
     """
     Calculate the soil water potential (MPa). The params The parameters b
     and psi_e are estimated from a typical soil moisture release function.
@@ -115,21 +120,21 @@ def calc_swp(sw, psi_e, theta_sat, b):
     if sw < theta_min:
         psi_soil = psi_soil_min
     else:
-        psi_soil = psi_e * (sw / theta_sat)**-b
+        psi_soil = p.psi_e * (sw / p.theta_sat)**-p.b
         if psi_soil < -20:
             psi_soil = psi_soil_min
 
     return psi_soil   # MPa
 
-def setup_output_dataframe(ndays, nhours, theta_sat, psi_e, b):
+def setup_output_dataframe(ndays, nhours, p):
 
     zero = np.zeros(ndays)
     out = pd.DataFrame({'year':zero, 'doy':zero,
                         'An_can':zero, 'E_can':zero, 'LAI':zero, 'sw':zero,
                         'beta': zero, 'psi_soil': zero})
 
-    out.sw[0] = theta_sat
-    out.psi_soil[0] = calc_swp(out.sw[0], psi_e, theta_sat, b)
+    out.sw[0] = p.theta_sat
+    out.psi_soil[0] = calc_swp(p, out.sw[0])
 
     zero = np.zeros(nhours)
     hour_store = pd.DataFrame({'An_can':zero, 'E_can':zero, 'LAI_can':zero,
@@ -137,16 +142,11 @@ def setup_output_dataframe(ndays, nhours, theta_sat, psi_e, b):
 
     return (out, hour_store)
 
-def store_hourly(idx, An, et, lai_leaf, precip, store, hours_in_day):
+def store_hourly(idx, An, et, lai_leaf, precip, store, timestep_sec):
 
-    if hours_in_day == 24:
-        an_conv = c.UMOL_TO_MOL * c.MOL_C_TO_GRAMS_C * c.SEC_TO_HR
-        et_conv = c.MOL_WATER_2_G_WATER * c.G_TO_KG * c.SEC_TO_HR
-        precip_conv = c.SEC_TO_HR
-    else:
-        an_conv = c.UMOL_TO_MOL * c.MOL_C_TO_GRAMS_C * c.SEC_TO_HLFHR
-        et_conv = c.MOL_WATER_2_G_WATER * c.G_TO_KG * c.SEC_TO_HLFHR
-        precip_conv = c.SEC_TO_HLFHR
+    an_conv = c.UMOL_TO_MOL * c.MOL_C_TO_GRAMS_C * timestep_sec
+    et_conv = c.MOL_WATER_2_G_WATER * c.G_TO_KG * timestep_sec
+    precip_conv = timestep_sec
 
     #sun_frac = lai_leaf[c.SUNLIT] / np.sum(lai_leaf)
     #sha_frac = lai_leaf[c.SHADED] / np.sum(lai_leaf)
@@ -161,7 +161,7 @@ def store_hourly(idx, An, et, lai_leaf, precip, store, hours_in_day):
 
     store.delta_sw[idx] = precip - store.E_can[idx]
 
-def store_daily(year, doy, idx, store, soil_volume, theta_sat, psi_e, b,
+def store_daily(year, doy, idx, store, theta_sat, psi_e, b,
                 beta, out):
 
     out.year[idx] = year
@@ -182,12 +182,11 @@ def store_daily(year, doy, idx, store, soil_volume, theta_sat, psi_e, b,
     if delta > delta_max:
         delta = delta_max
 
-    out.sw[idx] = update_sw_bucket(np.sum(store.delta_sw), prev_sw,
-                                   soil_volume, theta_sat)
-    out.psi_soil[idx] = calc_swp(out.sw[idx], psi_e, theta_sat, b)
+    out.sw[idx] = update_sw_bucket(p, np.sum(store.delta_sw), prev_sw)
+    out.psi_soil[idx] = calc_swp(p, out.sw[idx])
 
 
-def update_sw_bucket(delta_sw, sw_prev, soil_volume, theta_sat):
+def update_sw_bucket(p, delta_sw, sw_prev):
     """
     Update the simple bucket soil water balance
 
@@ -208,8 +207,8 @@ def update_sw_bucket(delta_sw, sw_prev, soil_volume, theta_sat):
         new volumetric soil water (m3 m-3)
     """
 
-    sw = min(theta_sat, \
-             sw_prev + delta_sw / (soil_volume * c.M_2_MM))
+    sw = min(p.theta_sat, \
+             sw_prev + delta_sw / (p.soil_volume * c.M_2_MM))
     sw = max(0.0, sw)
 
     return sw
@@ -298,33 +297,14 @@ if __name__ == "__main__":
     #lai = np.ones(len(met)) * 1.0
 
 
-    soil_depth = 0.2 # depth of soil bucket, m
-    ground_area = 1.0 # m
-    soil_volume = ground_area * soil_depth # m3
-    theta_sat = 0.31
-    psi_e = -0.8 * c.KPA_2_MPA   # Sand, MPa
-    b = 6.
-    # whole plant max. hydraulic conductance without cavitation
-    # kg timestep (e.g. 30 min-1)-1 MPa-1 m-2
-    #Kmax = 1000.0
-
-    #Kmax = 1.5 # mmol m-2 s-1 MPa-1, Manon Fig 10
-    Kmax = 0.7 # mmol m-2 s-1 MPa-1, Manon Fig 10
-    b_plant = 1.0  # sensitivity of VC, MPa (higher = less sensitive to SW)
-    c_plant = 2.0  # shape of VC, [-]
-
-
-    out_aCa = main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant,
-                   c_plant)
+    out_aCa = main(p, met, lai)
 
     met.ca *= 1.5
-    out_eCa = main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant,
-                   c_plant)
+    out_eCa = main(p, met, lai)
 
 
     #lai *= 1.2
-    #out_eCa_eL = main(met, lai, soil_volume, theta_sat, psi_e, b, Kmax, b_plant,
-    #                  c_plant)
+    #out_eCa_eL = main(p, met, lai)
 
     fig = plt.figure(figsize=(9,16))
     fig.subplots_adjust(hspace=0.1)

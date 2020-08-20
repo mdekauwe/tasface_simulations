@@ -52,8 +52,7 @@ def main(met, lai, soil_volume, theta_sat):
         (An, et, Tcan,
          apar, lai_leaf) = T.main(met.tair[i], met.par[i], met.vpd[i],
                                   met.wind[i], met.press[i], met.ca[i],
-                                  doy, hod, lai[i], Vcmax25=p.Vcmax25,
-                                  Jmax25=p.Jmax25, beta=beta)
+                                  doy, hod, lai[i], beta=beta)
 
         if hour_cnt == hours_in_day: # End of the day
             store_daily(year, doy, day_cnt, store, soil_volume, theta_sat, beta,

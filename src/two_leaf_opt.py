@@ -20,7 +20,7 @@ import random
 import math
 
 import constants as c
-from penman_monteith_leaf import PenmanMonteith
+from farq import FarquharC3
 from radiation import spitters
 from radiation import calculate_absorbed_radiation
 from radiation import calculate_cos_zenith, calc_leaf_to_canopy_scalar
@@ -34,20 +34,17 @@ __email__   = "mdekauwe@gmail.com"
 class Canopy(object):
     """Iteratively solve leaf temp, Ci, gs and An."""
 
-    def __init__(self, p, peaked_Jmax=True, peaked_Vcmax=True, model_Q10=True,
-                 iter_max=100):
+    def __init__(self, params=None, peaked_Jmax=True, peaked_Vcmax=True,
+                 met_timestep=30):
 
-        self.p = p
-
-        self.peaked_Jmax = peaked_Jmax
-        self.peaked_Vcmax = peaked_Vcmax
-        self.model_Q10 = model_Q10
-        self.iter_max = iter_max
+        self.p = params
+        self.S = ProfitMax(params=params, met_timestep=met_timestep)
+        self.F = FarquharC3(peaked_Jmax=peaked_Jmax,
+                            peaked_Vcmax=peaked_Vcmax)
 
 
     def main(self, tair, par, vpd, wind, pressure, Ca, doy, hod,
-             lai, psi_soil, Kmax, b_plant, c_plant, hours_in_day,
-             rnet=None, Vcmax25=None, Jmax25=None, beta=None):
+             lai, psi_soil):
         """
         Parameters:
         ----------
@@ -84,13 +81,11 @@ class Canopy(object):
         et : float
             transpiration (mol H2O m-2 s-1)
         """
-        S = ProfitMax(Vcmax25, Jmax25, Kmax, b_plant, c_plant, hours_in_day)
-        PM = PenmanMonteith()
 
         An = np.zeros(2) # sunlit, shaded
         gsc = np.zeros(2)  # sunlit, shaded
         gsw = np.zeros(2)  # sunlit, shaded
-        et = np.zeros(2) # sunlit, shaded
+        Evap = np.zeros(2) # sunlit, shaded
         Tcan = np.zeros(2) # sunlit, shaded
         lai_leaf = np.zeros(2)
         sw_rad = np.zeros(2) # VIS, NIR
@@ -135,6 +130,7 @@ class Canopy(object):
                 if dleaf < 0.05:
                     dleaf = 0.05
                 Cs = Ca * c.umol_to_mol * pressure
+
                 press = pressure * c.PA_2_KPA
                 Tleaf = tair
                 Tleaf_K = Tleaf + c.DEG_2_KELVIN
@@ -149,25 +145,29 @@ class Canopy(object):
                          opt_gsw[ileaf],
                          opt_gsc[ileaf],
                          opt_e[ileaf],
-                         opt_p[ileaf]) = S.optimisation(psi_soil, dleaf, Cs,
-                                                        Tleaf, apar[ileaf],
-                                                        press, lai_leaf[ileaf],
-                                                        scalex[ileaf])
+                         opt_p[ileaf]) = self.S.optimisation(self.p, self.F,
+                                                             psi_soil,
+                                                             dleaf, Cs,
+                                                             Tleaf_K,
+                                                             apar[ileaf],
+                                                             press,
+                                                             lai_leaf[ileaf],
+                                                             scalex[ileaf])
 
 
                         An[ileaf] = opt_a[ileaf]
                         gsw[ileaf] = opt_gsw[ileaf]
                         gsc[ileaf] = opt_gsc[ileaf]
-                        et[ileaf] = opt_e[ileaf]
+                        Evap[ileaf] = opt_e[ileaf]
 
-                        #print("here")
-                        #print(opt_a[ileaf], opt_g[ileaf], et[ileaf])
-
-                        # Put Manon's funcs in
+                        # Put Manon's funcs in and iterate
                         # Calc leaf temp
 
                     else:
-                        An[ileaf], gsc[ileaf] = 0., 0.
+                        An[ileaf] = 0.0
+                        gsw[ileaf] = 0.0
+                        gsc[ileaf] = 0.0
+                        Evap[ileaf] = 0.0
 
                     # Calculate new Tleaf, dleaf, Cs ... need to fix
 
@@ -185,8 +185,8 @@ class Canopy(object):
                     if iter > self.iter_max:
                         #raise Exception('No convergence: %d' % (iter))
                         An[ileaf] = 0.0
-                        gsw[ileaf] = 0.0
-                        et[ileaf] = 0.0
+                        gsw_c[ileaf] = 0.0
+                        Evap[ileaf] = 0.0
                         break
 
                     # Update temperature & do another iteration
@@ -196,7 +196,7 @@ class Canopy(object):
 
                     iter += 1
 
-        return (An, et, Tcan, apar, lai_leaf)
+        return (An, Evap, Tcan, apar, lai_leaf)
 
 
 
