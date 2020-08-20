@@ -80,9 +80,7 @@ class ProfitMax(object):
         store_e_can = np.zeros(N)
         store_gsw_can = np.zeros(N)
 
-
         conv = c.KG_TO_G * c.G_WATER_2_MOL_WATER / self.timestep_sec
-
 
         # Transpiration (per unit leaf) max before hydraulic failure (e_crit)
         # kg H2O 30 min-1 m-2 (leaf)
@@ -160,7 +158,7 @@ class ProfitMax(object):
         Returns:
         -----------
         p_leaf : float
-            integrated vulnerability curve, MPa
+            "whole plant" (leaf-xylem) water potential, MPa, MPa
         """
         dp = 0.0
         N = 20 # P range
