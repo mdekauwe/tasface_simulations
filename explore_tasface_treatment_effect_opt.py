@@ -26,9 +26,6 @@ from two_leaf_opt import Canopy as TwoLeaf
 
 def main(p, met, lai):
 
-
-
-
     days = met.doy
     hod = met.hod
     ndays = int(len(days) / 24.)
@@ -52,7 +49,7 @@ def main(p, met, lai):
     hour_cnt = 1 # hour count
     day_cnt = 0
     while i < len(met):
-        print("%d:%d\n" % (i, len(met)))
+        print("%d:%d" % (i, len(met)))
         year = met.index.year[i]
         doy = met.doy[i]
         hod = met.hod[i] + 1
@@ -196,8 +193,7 @@ def update_sw_bucket(p, delta_sw, sw_prev):
         flux of water out of the soil (transpiration (kg m-2 timestep-1))
     sw_prev : float
         volumetric soil water from the previous timestep (m3 m-3)
-    soil_volume : float
-        volume soil water bucket (m3)
+
 
     Returns:
     -------
