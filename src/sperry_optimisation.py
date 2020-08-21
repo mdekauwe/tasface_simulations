@@ -182,6 +182,14 @@ class ProfitMax(object):
         """
         Calculate the vulnerability to cavitation using a Weibull function
 
+        References:
+        -----------
+        * Neufeld H.S., Grantz D.A., Meinzer F.C., Goldstein G., Crisosto G.M.
+          and Crisosto C. (1992) Genotypic variability in vulnerability of leaf
+          xylem to cavitation in water-stressed and well-irrigated sugarcane.
+          Plant Physiology 100, 1020–1028.
+
+
         Parameters:
         -----------
         p : float
