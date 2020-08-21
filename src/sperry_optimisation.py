@@ -249,11 +249,11 @@ class ProfitMax(object):
                 an_new = an # umol m-2 s-1
                 break
 
-            # shift min up
+            # narrow search space, shift min up
             elif (gsc_new < gsc):
                 min_ci = ci_new # umol mol-1
 
-            # sh
+            # narrow search space, shift max down
             else:
                 max_ci = ci_new # umol mol-1
 
