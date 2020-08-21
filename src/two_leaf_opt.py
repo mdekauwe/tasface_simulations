@@ -38,7 +38,8 @@ class Canopy(object):
                  met_timestep=30):
 
         self.p = params
-        self.S = ProfitMax(params=params, met_timestep=met_timestep)
+        self.S = ProfitMax(params=params, met_timestep=met_timestep,
+                           derive_weibull_params=False)
         self.F = FarquharC3(peaked_Jmax=peaked_Jmax,
                             peaked_Vcmax=peaked_Vcmax)
 

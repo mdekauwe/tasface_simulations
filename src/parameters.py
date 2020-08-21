@@ -1,5 +1,5 @@
 import numpy as np
-import constants as c
+import constants as const
 
 #
 ## Parameters - Dushan to set these ...
@@ -136,14 +136,20 @@ chi = 9.99999978E-03
 diameter = 3.25 # chamber
 footprint = np.pi * (diameter / 2.)**2 # to convert from tree to m2
 
-
 Kmax = 1.5 # mmol m-2 s-1 MPa-1, Manon Fig 10
 
 # sensitivity of VC, MPa (higher = less sensitive to SW)
-b_plant = 2.0
+b = 2.0
 
 # shape of VC, [-]
-c_plant = 2.0
+c = 2.0
+
+p12 = None
+
+p50 = None
+
+p88 = None
+
 
 # depth of soil bucket, m
 soil_depth = 0.2
@@ -156,6 +162,6 @@ soil_volume = ground_area * soil_depth # m3
 # m3/m3
 theta_sat = 0.31
 
-psi_e = -0.8 * c.KPA_2_MPA   # Sand, MPa
+psi_e = -0.8 * const.KPA_2_MPA   # Sand, MPa
 
-b = 6.
+bch = 6.

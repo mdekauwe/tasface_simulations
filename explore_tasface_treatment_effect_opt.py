@@ -120,7 +120,7 @@ def calc_swp(p, sw):
     if sw < theta_min:
         psi_soil = psi_soil_min
     else:
-        psi_soil = p.psi_e * (sw / p.theta_sat)**-p.b
+        psi_soil = p.psi_e * (sw / p.theta_sat)**-p.bch
         if psi_soil < -20:
             psi_soil = psi_soil_min
 

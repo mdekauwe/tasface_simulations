@@ -35,14 +35,19 @@ class ProfitMax(object):
       226: 1638-1655. doi:10.1111/nph.16376
     """
 
-    def __init__(self, params=None, met_timestep=30., resolution=100):
+    def __init__(self, params=None, met_timestep=30., resolution=100,
+                 derive_weibull_params=False):
 
         self.p = params
         self.met_timestep = met_timestep
         self.timestep_sec = 60. * self.met_timestep
 
-        self.b_plant = params.b_plant
-        self.c_plant = params.c_plant
+        if derive_weibull_params:
+            (self.b, self.c) = self.get_weibull_params()
+        else:
+            self.b = params.b
+            self.c = params.c
+
         self.Kmax = params.Kmax
 
         # Critical soil–plant hydraulic cond below which cavitation occurs
@@ -93,8 +98,7 @@ class ProfitMax(object):
         """
         # Canopy xylem pressure (P_crit) MPa, beyond which tree
         # desiccates (Ecrit), MPa
-        p_crit = -self.b_plant * \
-                    np.log(self.Kmax / self.Kcrit)**(1.0 / self.c_plant)
+        p_crit = -self.b * np.log(self.Kmax / self.Kcrit)**(1.0 / self.c)
 
         p = np.linspace(psi_soil, p_crit, self.resolution)
         ci = np.empty_like(p)
@@ -201,7 +205,7 @@ class ProfitMax(object):
 
         """
         weibull = np.maximum(self.zero,
-                             np.exp(-(-p / self.b_plant)**self.c_plant))
+                             np.exp(-(-p / self.b)**self.c))
 
         return weibull
 
@@ -268,3 +272,34 @@ class ProfitMax(object):
                 break
 
         return ci_new, an_new
+
+    def get_weibull_params(self):
+        """
+        Calculate the Weibull sensitivity (b) and shape (c) parameters
+        """
+        p12 = self.p.p12
+        p50 = self.p.p50
+        p88 = self.p.p88
+
+        if p12 is not None and p50 is not None:
+            px1 = p12
+            x1 = 12. / 100.
+            px2 = p50
+            x2 = 50. / 100.
+        elif p12 is not None and p88 is not None:
+            px1 = p12
+            x1 = 12. / 100.
+            px2 = p88
+            x2 = 88. / 100.
+        elif p50 is not None and p88 is not None:
+            px1 = p50
+            x1 = 50. / 100.
+            px2 = p88
+            x2 = 88. / 100.
+
+        c = np.log(np.log(1. - x1) / np.log(1. - x2)) / (np.log(px1) -
+                                                         np.log(px2))
+
+        b = px1 / ((- np.log(1 - x1)) ** (1. / c))
+
+        return b, c
