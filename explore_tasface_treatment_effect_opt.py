@@ -301,8 +301,8 @@ if __name__ == "__main__":
     out_eCa = main(p, met, lai)
 
 
-    #lai *= 1.2
-    #out_eCa_eL = main(p, met, lai)
+    lai *= 1.2
+    out_eCa_eL = main(p, met, lai)
 
     print("Totals - A: %f, E: %f" % \
             (np.sum(out_aCa.An_can), np.sum(out_aCa.E_can)))
@@ -365,40 +365,35 @@ if __name__ == "__main__":
 
     ax1.set_ylabel("SWC (m$^{3}$ m$^{-3}$)")
 
-    #ax2.plot(out_aCa.sw, out_aCa.beta, "bo")
-    #ax2.plot(out_eCa.sw, out_eCa.beta, "ro")
-    #ax2.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
-
     rr = np.log(out_eCa.An_can / out_aCa.An_can)
     response_eca = (np.exp(rr)-1.0)*100.0
 
-    #rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
-    #response_eca_ela = (np.exp(rr)-1.0)*100.0
+    rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
+    response_eca_ela = (np.exp(rr)-1.0)*100.0
 
 
-    #response = ((out_eCa.An_can/out_aCa.An_can)-1.0)*100.
-    #response_eca_ela = np.where(response_eca > 100, np.nan, response_eca_ela)
+    response_eca_ela = np.where(response_eca > 100, np.nan, response_eca_ela)
     response_eca = np.where(response_eca > 100, np.nan, response_eca)
     #print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
 
     ax2.plot(time_day, response_eca, "r-", label="eC$_a$")
-    #ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
+    ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
     ax2.set_ylim(0, 100)
     ax2.set_ylabel("Response of A to CO$_2$ (%)")
 
     rr = np.log(out_eCa.E_can / out_aCa.E_can)
     response_eca = (np.exp(rr)-1.0)*100.0
 
-    #rr = np.log(out_eCa_eL.E_can / out_aCa.E_can)
-    #response_eca_ela = (np.exp(rr)-1.0)*100.0
+    rr = np.log(out_eCa_eL.E_can / out_aCa.E_can)
+    response_eca_ela = (np.exp(rr)-1.0)*100.0
 
 
-    #response_eca_ela = np.where(response_eca > 50, np.nan, response_eca_ela)
+    response_eca_ela = np.where(response_eca > 50, np.nan, response_eca_ela)
     response_eca = np.where(response_eca > 50, np.nan, response_eca)
     #print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
 
     ax3.plot(time_day, response_eca, "r-", label="eC$_a$")
-    #ax3.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
+    ax3.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
     ax3.set_ylim(-50, 50)
     ax3.set_ylabel("Response of E to CO$_2$ (%)")
 
