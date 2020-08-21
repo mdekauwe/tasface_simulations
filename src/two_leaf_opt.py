@@ -24,8 +24,7 @@ from farq import FarquharC3
 from radiation import spitters
 from radiation import calculate_absorbed_radiation
 from radiation import calculate_cos_zenith, calc_leaf_to_canopy_scalar
-#from sperry_optimisation import ProfitMax
-from other_sperry_optimisation import ProfitMax
+from sperry_optimisation import ProfitMax
 
 __author__  = "Martin De Kauwe"
 __version__ = "1.0 (09.11.2018)"
