@@ -129,9 +129,13 @@ class ProfitMax(object):
         #### used in the cost term
         ####
 
+        # mmol s-1 m-2 MPa-1
+        #kmax = self.Kmax, self.get_xylem_vulnerability(psi_soil)
+
 
         # normalised cost (-)
         cost = (self.Kmax - K) / (self.Kmax - self.Kcrit)
+        #cost = (kmax - K) / (kmax - self.Kcrit)
         #cost = 1.0 - K / np.max(K)
 
         # normalised gain (-)
