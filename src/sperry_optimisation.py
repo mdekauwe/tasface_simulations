@@ -204,10 +204,9 @@ class ProfitMax(object):
         ci_new  = 0.0
         an_new  = 0.0
 
-        gamma_star = F.arrh(params.gamstar25, params.Eag, tleafK)
-
-        min_ci  = gamma_star # umol m-2 s-1
-        max_ci  = ca # umol m-2 s-1
+        # gamma star, umol m-2 s-1
+        min_ci = F.arrh(params.gamstar25, params.Eag, tleafK)
+        max_ci = ca # umol m-2 s-1
 
         while True:
             ci_new = 0.5 * (max_ci + min_ci) # umol mol-1
