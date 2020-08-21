@@ -44,7 +44,6 @@ class ProfitMax(object):
         self.b_plant = params.b_plant
         self.c_plant = params.c_plant
         self.Kmax = params.Kmax
-        self.crit_ratio = 0.05
 
         # Critical soil–plant hydraulic cond below which cavitation occurs
         self.Kcrit = 0.05 * self.Kmax
@@ -94,9 +93,9 @@ class ProfitMax(object):
         """
         # Canopy xylem pressure (P_crit) MPa, beyond which tree
         # desiccates (Ecrit), MPa
-        p_crit = - self.b_plant * \
-                    np.log(1. / self.crit_ratio)**(1. / self.c_plant)
-
+        p_crit = -self.b_plant * \
+                    np.log(self.Kmax / self.Kcrit)**(1.0 / self.c_plant)
+        
         p = np.linspace(psi_soil, p_crit, self.resolution)
         ci = np.empty_like(p)
         a_canopy = np.empty_like(p)
