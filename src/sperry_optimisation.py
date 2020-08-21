@@ -144,7 +144,9 @@ class ProfitMax(object):
         """
         At steady-state, transpiration is the integral of the plant's
         vulnerability curve from zero (no cuticular conductance) to its \
-        maximum (e_crit) (Sperry & Love 2015)
+        maximum (e_crit) (Sperry & Love 2015). By integrating across the
+        soil–plant vulnerability curve, the relation between transpiration and
+        a given total pressure drop can be found.
 
         References:
         ----------
