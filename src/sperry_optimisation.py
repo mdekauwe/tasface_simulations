@@ -114,8 +114,8 @@ class ProfitMax(object):
 
         # For every gsc/psi_leaf get a match An and Ci
         for i in range(len(p)):
-            (ci[i], a_canopy[i]) = self.get_a_and_ci(gsc[i], ca, tleafK, par,
-                                                     press, scalex, params, F)
+            (ci[i], a_canopy[i]) = self.get_a_and_ci(params, F, gsc[i], ca,
+                                                     tleafK, par, press, scalex)
 
         # Soil–plant hydraulic conductance at canopy xylem pressure,
         # mmol m-2 s-1 MPa-1
@@ -198,9 +198,37 @@ class ProfitMax(object):
 
         return weibull
 
-    def get_a_and_ci(self, gsc, ca, tleafK, par, press, scalex, params, F,
+    def get_a_and_ci(self, params, F, gsc, ca, tleafK, par, press, scalex,
                      tol=1E-12):
+        """
+        Find the matching An and Ci for a given gsc.
 
+        Parameters:
+        -----------
+        params : struct
+            contains all the model params
+        F : class
+            class to control photosynthesis model
+        gsc : float
+            stomatal conductance to CO2, mol CO2 m-2 s-1
+        ca : float
+            co2 concentration, umol mol-1
+        tleafK : float
+            leaf temperature, K
+        par : float
+            photosynthetically active radiation, umol m-2 s-1
+        press : float
+            air pressure, kPa
+        scalex : float
+            scaler to transform leaf to big leaf
+
+        Returns:
+        --------
+        ci_new : float
+            interceullular CO2 concentration, umol mol-1
+        an_new : float
+            net leaf assimilation rate, umol m-2 s-1
+        """
         ci_new  = 0.0
         an_new  = 0.0
 
@@ -225,7 +253,7 @@ class ProfitMax(object):
             elif (gsc_new < gsc):
                 min_ci = ci_new # umol mol-1
 
-            # shift max down
+            # sh
             else:
                 max_ci = ci_new # umol mol-1
 
