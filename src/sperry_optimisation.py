@@ -142,9 +142,15 @@ class ProfitMax(object):
 
     def calc_transpiration(self, p):
         """
-        Calculate every possible transpiration flux from zero (no cuticular
-        conductance) to its maximum (e_crit) for each psi_leaf, including
-        vulnerability to cavitation
+        At steady-state, transpiration is the integral of the plant's
+        vulnerability curve from zero (no cuticular conductance) to its \
+        maximum (e_crit) (Sperry & Love 2015)
+
+        References:
+        ----------
+        * Sperry J.S. & Love D.M. (2015) Tansley review: What plant hydraulics
+          can tell us about plant responses to climate-change droughts.
+          New Phytologist 207, 14–27.
 
         Parameters:
         -----------
@@ -159,6 +165,8 @@ class ProfitMax(object):
         """
         e_leaf = np.empty_like(p)
 
+        # integrate over the full range of water potentials from psi_soil to
+        # e_crit
         for i in range(len(p)):
             e_leaf[i], err = quad(self.get_xylem_vulnerability, p[i], p[0])
 
