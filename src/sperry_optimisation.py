@@ -94,10 +94,10 @@ class ProfitMax(object):
         """
         # Canopy xylem pressure (P_crit) MPa, beyond which tree
         # desiccates (Ecrit), MPa
-        Pcrit = - self.b_plant * \
-                    np.log(1. / self.crit_ratio)**(1. / self.c_plant)  
+        P_crit = - self.b_plant * \
+                    np.log(1. / self.crit_ratio)**(1. / self.c_plant)
 
-        p = np.linspace(psi_soil, Pcrit, self.resolution)
+        p = np.linspace(psi_soil, P_crit, self.resolution)
         ci = np.empty_like(p)
         a_canopy = np.empty_like(p)
 
