@@ -45,9 +45,11 @@ class ProfitMax(object):
         self.c_plant = params.c_plant
         self.Kmax = params.Kmax
         self.crit_ratio = 0.05
+
+        # Critical soil–plant hydraulic cond below which cavitation occurs
         self.Kcrit = 0.01 * self.Kmax
-        self.zero = 1.0E-17
         self.resolution = resolution # number of water potential samples
+        self.zero = 1.0E-17
 
     def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
@@ -90,16 +92,17 @@ class ProfitMax(object):
         opt_p : float
             optimised p_leaf (really total plant), MPa
         """
-
+        # Canopy xylem pressure (P_crit) MPa, beyond which tree
+        # desiccates (Ecrit), MPa
         Pcrit = - self.b_plant * \
-                    np.log(1. / self.crit_ratio)**(1. / self.c_plant)  # MPa
+                    np.log(1. / self.crit_ratio)**(1. / self.c_plant)  
 
         p = np.linspace(psi_soil, Pcrit, self.resolution)
         ci = np.empty_like(p)
         a_canopy = np.empty_like(p)
 
-        # Calculate transpiration for every water potential,
-        # mol H20 m-2 s-1 (leaf)
+        # Calculate transpiration for every water potential, integrating
+        # vulnerability to cavitation, mol H20 m-2 s-1 (leaf)
         e_leaf = self.calc_transpiration(p)
 
         # Scale to the sunlit or shaded fraction of the canopy, mol H20 m-2 s-1
@@ -139,7 +142,9 @@ class ProfitMax(object):
 
     def calc_transpiration(self, p):
         """
-        Calculate every possible transpiration flux from each psi_leaf
+        Calculate every possible transpiration flux from zero (no cuticular
+        conductance) to its maximum (e_crit) for each psi_leaf, including
+        vulnerability to cavitation
 
         Parameters:
         -----------
