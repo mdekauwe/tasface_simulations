@@ -124,6 +124,12 @@ class ProfitMax(object):
         # mmol m-2 s-1 MPa-1
         K = self.Kmax * self.get_xylem_vulnerability(p)
 
+        ####
+        #### Discuss with manon, here she is reducing the kmax in time that is
+        #### used in the cost term
+        ####
+
+
         # normalised cost (-)
         cost = (self.Kmax - K) / (self.Kmax - self.Kcrit)
         #cost = 1.0 - K / np.max(K)
