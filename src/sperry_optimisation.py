@@ -95,7 +95,7 @@ class ProfitMax(object):
         # desiccates (Ecrit), MPa
         p_crit = -self.b_plant * \
                     np.log(self.Kmax / self.Kcrit)**(1.0 / self.c_plant)
-        
+
         p = np.linspace(psi_soil, p_crit, self.resolution)
         ci = np.empty_like(p)
         a_canopy = np.empty_like(p)
@@ -236,12 +236,11 @@ class ProfitMax(object):
         an_new : float
             net leaf assimilation rate, umol m-2 s-1
         """
-        ci_new  = 0.0
-        an_new  = 0.0
 
         # gamma star, umol m-2 s-1
         min_ci = F.arrh(params.gamstar25, params.Eag, tleafK)
         max_ci = ca # umol m-2 s-1
+        an_new  = 0.0
 
         while True:
             ci_new = 0.5 * (max_ci + min_ci) # umol mol-1
