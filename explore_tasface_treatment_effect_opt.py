@@ -359,7 +359,7 @@ if __name__ == "__main__":
 
     ax1.plot(time_day, out_aCa.sw, "b-", label="aC$_a$")
     ax1.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
-    ax1.plot(time_day, out_eCa_eL.sw, "g-", label="eC$_a$ + e$_{LAI}$")
+
     ax1.legend(numpoints=1, loc="best", frameon=False)
     ax1.set_ylim(0.05, 0.35)
 
