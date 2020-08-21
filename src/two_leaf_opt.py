@@ -143,26 +143,12 @@ class Canopy(object):
 
                     if scalex[ileaf] > 0.:
 
-                        """
-                        (opt_a[ileaf],
-                         opt_gsw[ileaf],
-                         opt_gsc[ileaf],
-                         opt_e[ileaf],
-                         opt_p[ileaf]) = self.S.optimisation(self.p, self.F,
-                                                             psi_soil,
-                                                             dleaf, Cs,
-                                                             Tleaf_K,
-                                                             apar[ileaf],
-                                                             press,
-                                                             lai_leaf[ileaf],
-                                                             scalex[ileaf])
-                        """
 
                         (opt_a[ileaf],
                          opt_gsw[ileaf],
                          opt_gsc[ileaf],
                          opt_e[ileaf],
-                         opt_p[ileaf]) = self.S.optimisation_manon(self.p, self.F,
+                         opt_p[ileaf]) = self.S.optimisation(self.p, self.F,
                                                              psi_soil,
                                                              dleaf, Cs,
                                                              Tleaf_K,
