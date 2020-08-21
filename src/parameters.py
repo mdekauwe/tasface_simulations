@@ -137,11 +137,10 @@ diameter = 3.25 # chamber
 footprint = np.pi * (diameter / 2.)**2 # to convert from tree to m2
 
 
-#Kmax = 1.5 # mmol m-2 s-1 MPa-1, Manon Fig 10
-Kmax = 0.5 # mmol m-2 s-1 MPa-1, Manon Fig 10
+Kmax = 1.5 # mmol m-2 s-1 MPa-1, Manon Fig 10
 
 # sensitivity of VC, MPa (higher = less sensitive to SW)
-b_plant = 1.5
+b_plant = 2.0
 
 # shape of VC, [-]
 c_plant = 2.0

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from math import pi, cos, sin, exp, sqrt, acos, asin
 import random
 import math
-
+from scipy.integrate import quad
 import constants as c
 
 
@@ -39,6 +39,63 @@ class ProfitMax(object):
         self.c_plant = params.c_plant
         self.Kmax = params.Kmax
         self.Kcrit = 0.01 * self.Kmax
+
+    def optimisation_manon(self, params, F, psi_soil, vpd, ca, tleafK, par,
+                           press, lai, scalex):
+
+        
+        ratiocrit = 0.05
+        Pcrit = - self.b_plant * np.log(1. / ratiocrit) ** (1. / self.c_plant)  # MPa
+        P = np.linspace(psi_soil, Pcrit, 200)
+        trans = self.transpiration(P, self.Kmax, self.b_plant, self.c_plant)
+        e_canopy = trans * lai
+
+        gsw = e_canopy / vpd * press # mol H20 m-2 s-1
+        gsc = gsw * c.GSW_2_GSC # mol CO2 m-2 s-1
+
+        ci = np.empty_like(P)
+        a_canopy = np.empty_like(P)
+        for i in range(len(P)):
+            (ci[i], a_canopy[i]) = self.get_a_and_ci(gsc[i], ca, tleafK, par,
+                                                     press, scalex, params, F)
+
+
+        k = self.Kmax * self.f(P, self.b_plant, self.c_plant)  # mmol s-1 m-2 MPa-1
+
+        # cost, from kmax @ Ps to kcrit @ Pcrit
+        cost = (self.Kmax - k) / (self.Kmax - self.Kcrit)  # normalized, unitless
+
+        # Locate maximum profit
+        gain = a_canopy / np.max(a_canopy)
+
+        profit = gain - cost
+        idx = np.argmax(profit)
+
+        opt_a_canopy = a_canopy[idx]
+        opt_gsw_canopy = gsw[idx]
+        opt_gsc_canopy = opt_gsw_canopy * c.GSW_2_GSC   # mol CO2 m-2 s-1
+        opt_e_canopy = trans[idx]
+        opt_p = P[idx]
+
+        return opt_a_canopy, opt_gsw_canopy, opt_gsc_canopy, opt_e_canopy, opt_p
+
+    def transpiration(self, P, kmax, b, c):
+
+        zero = 1.e-17
+        FROM_MILI = 1.e-3
+
+        trans = np.empty_like(P)  # empty numpy array of right length
+
+        for i in range(len(P)):  # at Ps, trans=0; at Pcrit, trans=transcrit
+            trans[i], err = quad(self.f, P[i], P[0], args=(b, c))
+        trans[trans > zero] *= kmax * FROM_MILI  # mol.s-1.m-2
+
+        return np.maximum(zero, trans)
+
+    def f(self, P, b, c):
+
+        zero = 1.e-17
+        return np.maximum(zero, np.exp(-(-P / b) ** c))
 
     def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
@@ -143,7 +200,7 @@ class ProfitMax(object):
         opt_gsc_canopy = opt_gsw_canopy * c.GSW_2_GSC   # mol CO2 m-2 s-1
         opt_e_canopy = store_e_can[idx]
         opt_p = store_p[idx]
-        
+
         return opt_a_canopy, opt_gsw_canopy, opt_gsc_canopy, opt_e_canopy, opt_p
 
     def get_p_leaf(self, transpiration, psi_soil):

@@ -24,7 +24,8 @@ from farq import FarquharC3
 from radiation import spitters
 from radiation import calculate_absorbed_radiation
 from radiation import calculate_cos_zenith, calc_leaf_to_canopy_scalar
-from sperry_optimisation import ProfitMax
+#from sperry_optimisation import ProfitMax
+from other_sperry_optimisation import ProfitMax
 
 __author__  = "Martin De Kauwe"
 __version__ = "1.0 (09.11.2018)"
@@ -129,7 +130,8 @@ class Canopy(object):
                 dleaf = vpd
                 if dleaf < 0.05:
                     dleaf = 0.05
-                Cs = Ca * c.umol_to_mol * pressure
+                #Cs = Ca * c.umol_to_mol * pressure
+                Cs = Ca
 
                 press = pressure * c.PA_2_KPA
                 Tleaf = tair
@@ -141,11 +143,26 @@ class Canopy(object):
 
                     if scalex[ileaf] > 0.:
 
+                        """
                         (opt_a[ileaf],
                          opt_gsw[ileaf],
                          opt_gsc[ileaf],
                          opt_e[ileaf],
                          opt_p[ileaf]) = self.S.optimisation(self.p, self.F,
+                                                             psi_soil,
+                                                             dleaf, Cs,
+                                                             Tleaf_K,
+                                                             apar[ileaf],
+                                                             press,
+                                                             lai_leaf[ileaf],
+                                                             scalex[ileaf])
+                        """
+
+                        (opt_a[ileaf],
+                         opt_gsw[ileaf],
+                         opt_gsc[ileaf],
+                         opt_e[ileaf],
+                         opt_p[ileaf]) = self.S.optimisation_manon(self.p, self.F,
                                                              psi_soil,
                                                              dleaf, Cs,
                                                              Tleaf_K,

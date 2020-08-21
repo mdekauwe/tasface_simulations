@@ -41,7 +41,7 @@ def main(p, met, lai):
     timestep_sec = 60. * met_timestep
 
     # kg timestep (e.g. 30 min-1)-1 MPa-1 m-2
-    p.Kmax *= c.MMOL_2_MOL * c.MOL_WATER_2_G_WATER * c.G_TO_KG * timestep_sec
+    #p.Kmax *= c.MMOL_2_MOL * c.MOL_WATER_2_G_WATER * c.G_TO_KG * timestep_sec
 
     T = TwoLeaf(params=p, met_timestep=met_timestep)
 
@@ -51,7 +51,7 @@ def main(p, met, lai):
     hour_cnt = 1 # hour count
     day_cnt = 0
     while i < len(met):
-        print("%d:%d" % (i, len(met)))
+
         year = met.index.year[i]
         doy = met.doy[i]
         hod = met.hod[i] + 1
@@ -73,8 +73,10 @@ def main(p, met, lai):
         if hour_cnt == hours_in_day: # End of the day
             store_daily(year, doy, day_cnt, store, beta, out, p)
 
+            print("%d:%d" % (day_cnt, ndays))
             hour_cnt = 1
             day_cnt += 1
+
         else:
             store_hourly(hour_cnt-1, An, et, lai_leaf, met.precip[i], store,
                          timestep_sec)
@@ -295,8 +297,8 @@ if __name__ == "__main__":
 
     out_aCa = main(p, met, lai)
 
-    met.ca *= 1.5
-    out_eCa = main(p, met, lai)
+    #met.ca *= 1.5
+    #out_eCa = main(p, met, lai)
 
 
     #lai *= 1.2
@@ -320,13 +322,13 @@ if __name__ == "__main__":
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212)
     ax1.plot(time_day, out_aCa.An_can, "b-", label="Ambient")
-    ax1.plot(time_day, out_eCa.An_can, "r-", label="Elevated", alpha=0.5)
+    #ax1.plot(time_day, out_eCa.An_can, "r-", label="Elevated", alpha=0.5)
     ax1.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
     ax1.legend(numpoints=1, loc="best", frameon=False)
     ax1.set_ylim(0, 20)
 
     ax2.plot(time_day, out_aCa.E_can, "b-")
-    ax2.plot(time_day, out_eCa.E_can, "r-", alpha=0.5)
+    #ax2.plot(time_day, out_eCa.E_can, "r-", alpha=0.5)
     ax2.set_ylabel("E (mm d$^{-1}$)")
     ax2.set_ylim(0, 5)
 
@@ -356,7 +358,7 @@ if __name__ == "__main__":
 
 
     ax1.plot(time_day, out_aCa.sw, "b-", label="aC$_a$")
-    ax1.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
+    #ax1.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
     ax1.set_ylim(0.05, 0.35)
     #ax1.plot(time_day, out_eCa_eL.sw, "g-", label="eC$_a$ + e$_{LAI}$")
     ax1.legend(numpoints=1, loc="best", frameon=False)
@@ -367,8 +369,8 @@ if __name__ == "__main__":
     #ax2.plot(out_eCa.sw, out_eCa.beta, "ro")
     #ax2.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
 
-    rr = np.log(out_eCa.An_can / out_aCa.An_can)
-    response_eca = (np.exp(rr)-1.0)*100.0
+    #rr = np.log(out_eCa.An_can / out_aCa.An_can)
+    #response_eca = (np.exp(rr)-1.0)*100.0
 
     #rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
     #response_eca_ela = (np.exp(rr)-1.0)*100.0
@@ -376,29 +378,29 @@ if __name__ == "__main__":
 
     #response = ((out_eCa.An_can/out_aCa.An_can)-1.0)*100.
     #response_eca_ela = np.where(response_eca > 100, np.nan, response_eca_ela)
-    response_eca = np.where(response_eca > 100, np.nan, response_eca)
+    #response_eca = np.where(response_eca > 100, np.nan, response_eca)
     #print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
 
-    ax2.plot(time_day, response_eca, "r-", label="eC$_a$")
+    #ax2.plot(time_day, response_eca, "r-", label="eC$_a$")
     #ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
-    ax2.set_ylim(0, 100)
-    ax2.set_ylabel("Response of A to CO$_2$ (%)")
+    #ax2.set_ylim(0, 100)
+    #ax2.set_ylabel("Response of A to CO$_2$ (%)")
 
-    rr = np.log(out_eCa.E_can / out_aCa.E_can)
-    response_eca = (np.exp(rr)-1.0)*100.0
+    #rr = np.log(out_eCa.E_can / out_aCa.E_can)
+    #response_eca = (np.exp(rr)-1.0)*100.0
 
     #rr = np.log(out_eCa_eL.E_can / out_aCa.E_can)
     #response_eca_ela = (np.exp(rr)-1.0)*100.0
 
 
     #response_eca_ela = np.where(response_eca > 50, np.nan, response_eca_ela)
-    response_eca = np.where(response_eca > 50, np.nan, response_eca)
+    #response_eca = np.where(response_eca > 50, np.nan, response_eca)
     #print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
 
-    ax3.plot(time_day, response_eca, "r-", label="eC$_a$")
+    #ax3.plot(time_day, response_eca, "r-", label="eC$_a$")
     #ax3.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
-    ax3.set_ylim(-50, 50)
-    ax3.set_ylabel("Response of E to CO$_2$ (%)")
+    #ax3.set_ylim(-50, 50)
+    #ax3.set_ylabel("Response of E to CO$_2$ (%)")
 
 
     from matplotlib.ticker import MaxNLocator
