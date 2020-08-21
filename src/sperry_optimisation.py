@@ -47,7 +47,7 @@ class ProfitMax(object):
         self.crit_ratio = 0.05
 
         # Critical soil–plant hydraulic cond below which cavitation occurs
-        self.Kcrit = 0.01 * self.Kmax
+        self.Kcrit = 0.05 * self.Kmax
         self.resolution = resolution # number of water potential samples
         self.zero = 1.0E-17
 
