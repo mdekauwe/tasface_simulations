@@ -35,7 +35,7 @@ class ProfitMax(object):
       226: 1638-1655. doi:10.1111/nph.16376
     """
 
-    def __init__(self, params=None, met_timestep=30., resolution=50):
+    def __init__(self, params=None, met_timestep=30., resolution=100):
 
         self.p = params
         self.met_timestep = met_timestep
