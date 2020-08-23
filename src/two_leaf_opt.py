@@ -42,6 +42,7 @@ class Canopy(object):
                            derive_weibull_params=False)
         self.F = FarquharC3(peaked_Jmax=peaked_Jmax,
                             peaked_Vcmax=peaked_Vcmax)
+        
 
 
     def main(self, tair, par, vpd, wind, pressure, Ca, doy, hod,

@@ -359,6 +359,7 @@ if __name__ == "__main__":
 
     ax1.plot(time_day, out_aCa.sw, "b-", label="aC$_a$")
     ax1.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
+    ##ax1.plot(time_day, out_eCa_eL.sw, "g-", label="eC$_a$ + e$_{LAI}$")
 
     ax1.legend(numpoints=1, loc="best", frameon=False)
     ax1.set_ylim(0.05, 0.35)
@@ -368,32 +369,32 @@ if __name__ == "__main__":
     rr = np.log(out_eCa.An_can / out_aCa.An_can)
     response_eca = (np.exp(rr)-1.0)*100.0
 
-    rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
-    response_eca_ela = (np.exp(rr)-1.0)*100.0
+    ##rr = np.log(out_eCa_eL.An_can / out_aCa.An_can)
+    ##response_eca_ela = (np.exp(rr)-1.0)*100.0
 
 
-    response_eca_ela = np.where(response_eca > 100, np.nan, response_eca_ela)
+    ##response_eca_ela = np.where(response_eca > 100, np.nan, response_eca_ela)
     response_eca = np.where(response_eca > 100, np.nan, response_eca)
     #print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
 
     ax2.plot(time_day, response_eca, "r-", label="eC$_a$")
-    ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
+    ##ax2.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
     ax2.set_ylim(0, 100)
     ax2.set_ylabel("Response of A to CO$_2$ (%)")
 
     rr = np.log(out_eCa.E_can / out_aCa.E_can)
     response_eca = (np.exp(rr)-1.0)*100.0
 
-    rr = np.log(out_eCa_eL.E_can / out_aCa.E_can)
-    response_eca_ela = (np.exp(rr)-1.0)*100.0
+    ##rr = np.log(out_eCa_eL.E_can / out_aCa.E_can)
+    ##response_eca_ela = (np.exp(rr)-1.0)*100.0
 
 
-    response_eca_ela = np.where(response_eca > 50, np.nan, response_eca_ela)
+    ##response_eca_ela = np.where(response_eca > 50, np.nan, response_eca_ela)
     response_eca = np.where(response_eca > 50, np.nan, response_eca)
     #print(np.nanmean(response_eca), np.nanmean(response_eca_ela))
 
     ax3.plot(time_day, response_eca, "r-", label="eC$_a$")
-    ax3.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
+    ##ax3.plot(time_day, response_eca_ela, "g-", label="eC$_a$ + e$_{LAI}$")
     ax3.set_ylim(-50, 50)
     ax3.set_ylabel("Response of E to CO$_2$ (%)")
 

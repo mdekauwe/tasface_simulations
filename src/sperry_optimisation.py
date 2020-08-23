@@ -35,7 +35,7 @@ class ProfitMax(object):
       226: 1638-1655. doi:10.1111/nph.16376
     """
 
-    def __init__(self, params=None, met_timestep=30., resolution=100,
+    def __init__(self, params=None, met_timestep=30., resolution=10,
                  derive_weibull_params=False):
 
         self.p = params
@@ -54,6 +54,7 @@ class ProfitMax(object):
         self.Kcrit = 0.05 * self.Kmax
         self.resolution = resolution # number of water potential samples
         self.zero = 1.0E-17
+        self.prev_ci = None
 
     def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
@@ -130,12 +131,11 @@ class ProfitMax(object):
         ####
 
         # mmol s-1 m-2 MPa-1
-        #kmax = self.Kmax, self.get_xylem_vulnerability(psi_soil)
-
+        kcmax = self.Kmax * self.get_xylem_vulnerability(psi_soil)
 
         # normalised cost (-)
-        cost = (self.Kmax - K) / (self.Kmax - self.Kcrit)
-        #cost = (kmax - K) / (kmax - self.Kcrit)
+        #cost = (self.Kmax - K) / (self.Kmax - self.Kcrit)
+        cost = (kcmax - K) / (kcmax - self.Kcrit)
         #cost = 1.0 - K / np.max(K)
 
         # normalised gain (-)
@@ -150,6 +150,7 @@ class ProfitMax(object):
         opt_gsc = opt_gsw * c.GSW_2_GSC   # mol CO2 m-2 s-1
         opt_e = e_canopy[idx] # mol H2O m-2 s-1
         opt_p = p[idx] # MPa
+        self.prev_ci = ci[idx]
 
         return opt_a, opt_gsw, opt_gsc, opt_e, opt_p
 
@@ -250,9 +251,15 @@ class ProfitMax(object):
         an_new : float
             net leaf assimilation rate, umol m-2 s-1
         """
+        gamma_star = F.arrh(params.gamstar25, params.Eag, tleafK) # umol m-2 s-1
 
-        # gamma star, umol m-2 s-1
-        min_ci = F.arrh(params.gamstar25, params.Eag, tleafK)
+        #if self.prev_ci is None:
+        #    min_ci = gamma_star
+        #else:
+        #    # start search 30% below previous solution
+        #    min_ci = max(gamma_star, self.prev_ci * 0.6)
+
+        min_ci = gamma_star
         max_ci = ca # umol m-2 s-1
         an_new  = 0.0
 
@@ -307,9 +314,10 @@ class ProfitMax(object):
             px2 = p88
             x2 = 88. / 100.
 
-        c = np.log(np.log(1. - x1) / np.log(1. - x2)) / (np.log(px1) -
-                                                         np.log(px2))
+        b = px1 / ((-np.log(1 - x1))**(1. / c))
 
-        b = px1 / ((- np.log(1 - x1)) ** (1. / c))
+        num = np.log(np.log(1. - x1) / np.log(1. - x2))
+        den = np.log(px1) - np.log(px2)
+        c = num / den
 
         return b, c
