@@ -112,6 +112,9 @@ class ProfitMax(object):
         # Scale to the sunlit or shaded fraction of the canopy, mol H20 m-2 s-1
         e_canopy = e_leaf * lai
 
+        #### Need to move Tleaf stuff here and uses that and the resulting
+        #### dleaf to get a new gsw = gb*gw / (gb-gw) * ww*-w
+
         # assuming perfect coupling ... will fix
         gsw = e_canopy / vpd * press # mol H20 m-2 s-1
         gsc = gsw * c.GSW_2_GSC # mol CO2 m-2 s-1
