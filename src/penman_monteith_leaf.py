@@ -38,7 +38,7 @@ class PenmanMonteith(object):
 
         air_density = pressure  / (c.RSPECIFC_DRY_AIR * tair_k)
         cmolar = pressure  / (c.RGAS * tair_k)
-        rnet = self.calc_rnet(par, tair, tair_k, tleaf_k, vpd, pressure)
+        rnet = self.calc_rnet(par, tair, tair_k, vpd, pressure)
 
         (grn, gh, gbH, gw) = self.calc_conductances(p, tair_k, tleaf, tair,
                                                     wind, gsc, cmolar)
@@ -86,6 +86,7 @@ class PenmanMonteith(object):
         lambda_et : float
             latent heat flux (W m-2)
         """
+
         # latent heat of water vapour at air temperature (J mol-1)
         lambda_et = (c.H2OLV0 - 2.365E3 * tair) * c.H2OMW
 
@@ -191,9 +192,12 @@ class PenmanMonteith(object):
         gsw = gsc * c.GSC_2_GSW
         gw = (gbw * gsw) / (gbw + gsw)
 
-        return (grn, gh, gbH, gw)
+        # gb forced convection, conductance to water vapour (mol m-2 s-1)
+        gb = gbHw * c.GBH_2_GBW
 
-    def calc_rnet(self, par, tair, tair_k, tleaf_k, vpd, pressure):
+        return (grn, gh, gbH, gw, gb)
+
+    def calc_rnet(self, par, tair, tair_k, vpd, pressure):
         """
         Net isothermal radaiation (Rnet, W m-2), i.e. the net radiation that
         would be recieved if leaf and air temperature were the same.
@@ -210,8 +214,6 @@ class PenmanMonteith(object):
             air temperature (deg C)
         tair_k : float
             air temperature (K)
-        tleaf_k : float
-            leaf temperature (K)
         vpd : float
             Vapour pressure deficit (kPa, needs to be in Pa, see conversion
             below)
@@ -224,7 +226,7 @@ class PenmanMonteith(object):
             Net radiation (J m-2 s-1 = W m-2)
 
         """
-
+        print("**", par)
         # Short wave radiation (W m-2)
         #sw_rad = par * c.PAR_2_SW
 

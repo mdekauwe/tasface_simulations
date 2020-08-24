@@ -224,6 +224,7 @@ class Canopy(object):
         gw : float
             total leaf conductance to water vapour (mol m-2 s-1)
         """
+        
         tleaf_k = tleaf + c.DEG_2_KELVIN
         tair_k = tair + c.DEG_2_KELVIN
 
@@ -232,8 +233,8 @@ class Canopy(object):
         # convert from mm s-1 to mol m-2 s-1
         cmolar = pressure / (c.RGAS * tair_k)
 
-        (grn, gh, gbH, gw) = PM.calc_conductances(p, tair_k, tleaf, tair,
-                                                  wind, gsc, cmolar, lai)
+        (grn, gh, gbH, gw, gb) = PM.calc_conductances(p, tair_k, tleaf, tair,
+                                                      wind, gsc, cmolar, lai)
 
         if np.isclose(gsc, 0.0):
             et = 0.0

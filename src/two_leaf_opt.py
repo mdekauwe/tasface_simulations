@@ -25,6 +25,8 @@ from radiation import spitters
 from radiation import calculate_absorbed_radiation
 from radiation import calculate_cos_zenith, calc_leaf_to_canopy_scalar
 from sperry_optimisation import ProfitMax
+from utils import calc_esat
+from penman_monteith_leaf import PenmanMonteith
 
 __author__  = "Martin De Kauwe"
 __version__ = "1.0 (09.11.2018)"
@@ -42,7 +44,7 @@ class Canopy(object):
                            derive_weibull_params=False)
         self.F = FarquharC3(peaked_Jmax=peaked_Jmax,
                             peaked_Vcmax=peaked_Vcmax)
-        
+        self.PM = PenmanMonteith()
 
 
     def main(self, tair, par, vpd, wind, pressure, Ca, doy, hod,
@@ -174,11 +176,19 @@ class Canopy(object):
                         Evap[ileaf] = 0.0
 
                     # Calculate new Tleaf, dleaf, Cs ... need to fix
+                    (new_tleaf) = self.calc_leaf_temp(self.p, Tleaf,
+                                                      tair, gsc[ileaf],
+                                                      vpd, pressure, wind,
+                                                      rnet=qcan[ileaf],
+                                                      lai=lai_leaf[ileaf],
+                                                      trans=Evap[ileaf] )
 
-                    new_tleaf = Tleaf + 0.01
-                    dleaf = vpd
-
-
+                    if np.isclose(Evap[ileaf], 0.0) or \
+                       np.isclose(gsw[ileaf], 0.0):
+                        dleaf = vpd
+                    else:
+                        dleaf = (Evap[ileaf] * \
+                                 pressure / gsw[ileaf]) * c.PA_2_KPA # kPa
 
 
                     # Check for convergence...?
@@ -205,9 +215,9 @@ class Canopy(object):
 
 
 
-    def calc_leaf_temp(self, p, PM=None, tleaf=None, tair=None, gsc=None,
-                       par=None, vpd=None, pressure=None, wind=None, rnet=None,
-                       lai=None):
+    def calc_leaf_temp(self, p, tleaf=None, tair=None, gsc=None,
+                       vpd=None, pressure=None, wind=None, rnet=None,
+                       lai=None, trans=None):
         """
         Resolve leaf temp
 
@@ -221,8 +231,6 @@ class Canopy(object):
             air temperature (deg C)
         gs : float
             stomatal conductance (mol m-2 s-1)
-        par : float
-            Photosynthetically active radiation (umol m-2 s-1)
         vpd : float
             Vapour pressure deficit (kPa, needs to be in Pa, see conversion
             below)
@@ -230,6 +238,8 @@ class Canopy(object):
             air pressure (using constant) (Pa)
         wind : float
             wind speed (m s-1)
+        trans : float
+            transpiration (mol m-2 s-1)
 
         Returns:
         --------
@@ -250,15 +260,16 @@ class Canopy(object):
         # convert from mm s-1 to mol m-2 s-1
         cmolar = pressure / (c.RGAS * tair_k)
 
-        (grn, gh, gbH, gw) = PM.calc_conductances(p, tair_k, tleaf, tair,
-                                                  wind, gsc, cmolar, lai)
+        (grn, gh, gbH, gw, gb) = self.PM.calc_conductances(p, tair_k, tleaf,
+                                                           tair, wind, gsc,
+                                                           cmolar, lai)
 
-        if np.isclose(gsc, 0.0):
-            et = 0.0
-            le_et = 0.0
-        else:
-            (et, le_et) = PM.calc_et(tleaf, tair, vpd, pressure, wind, par,
-                                     gh, gw, rnet)
+        # latent heat of water vapour at air temperature (J mol-1)
+        lambda_et = (c.H2OLV0 - 2.365E3 * tair) * c.H2OMW
+
+        # slope of sat. water vapour pressure (e_sat) to temperature curve
+        # (Pa K-1), note kelvin conversion in func
+        slope = (calc_esat(tair + 0.1) - calc_esat(tair)) / 0.1
 
         # D6 in Leuning. NB I'm doubling conductances, see note below E5.
         # Leuning isn't explicit about grn but I think this is right
@@ -267,11 +278,11 @@ class Canopy(object):
         Y = 1.0 / (1.0 + (2.0 * grn) / (2.0 * gbH))
 
         # sensible heat exchanged between leaf and surroundings
-        H = Y * (rnet - le_et)
+        H = rnet - lambda_et * trans # W m-2
 
-        # leaf-air temperature difference recalculated from energy balance.
-        # NB. I'm using gh here to include grn and the doubling of conductances
-        new_Tleaf = tair + H / (c.CP * air_density * (gh / cmolar))
+        num = H
+        den = c.CP * air_density * gh + lambda_et * slope * (gb / cmolar)
+        new_Tleaf = tair + num / den
 
         # Update leaf temperature:
         new_tleaf_k = tleaf_k + (new_Tleaf + c.DEG_2_KELVIN)
@@ -279,4 +290,4 @@ class Canopy(object):
         # Update net radiation for canopy
         rnet -= c.CP * c.AIR_MASS * (new_tleaf_k - tair_k) * grn
 
-        return (new_Tleaf, et, le_et, gbH, gw)
+        return (new_Tleaf)
