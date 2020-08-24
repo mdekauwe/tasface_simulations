@@ -37,7 +37,7 @@ class Canopy(object):
     """Iteratively solve leaf temp, Ci, gs and An."""
 
     def __init__(self, params=None, peaked_Jmax=True, peaked_Vcmax=True,
-                 met_timestep=30):
+                 met_timestep=30, iter_max=100):
 
         self.p = params
         self.S = ProfitMax(params=params, met_timestep=met_timestep,
@@ -45,7 +45,7 @@ class Canopy(object):
         self.F = FarquharC3(peaked_Jmax=peaked_Jmax,
                             peaked_Vcmax=peaked_Vcmax)
         self.PM = PenmanMonteith()
-
+        self.iter_max = iter_max
 
     def main(self, tair, par, vpd, wind, pressure, Ca, doy, hod,
              lai, psi_soil):
@@ -192,6 +192,7 @@ class Canopy(object):
 
 
                     # Check for convergence...?
+                    #print(Tleaf, new_tleaf)
                     if math.fabs(Tleaf - new_tleaf) < 0.02:
                         Tcan[ileaf] = Tleaf
                         break
@@ -281,7 +282,7 @@ class Canopy(object):
         H = rnet - lambda_et * trans # W m-2
 
         num = H
-        den = c.CP * air_density * gh + lambda_et * slope * (gb / cmolar)
+        den = c.CP * air_density * (gh / cmolar)
         new_Tleaf = tair + num / den
 
         # Update leaf temperature:
