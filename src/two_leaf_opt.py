@@ -200,7 +200,8 @@ class Canopy(object):
                     if iter > self.iter_max:
                         #raise Exception('No convergence: %d' % (iter))
                         An[ileaf] = 0.0
-                        gsw_c[ileaf] = 0.0
+                        gsw[ileaf] = 0.0
+                        gsc[ileaf] = 0.0
                         Evap[ileaf] = 0.0
                         break
 
