@@ -183,17 +183,39 @@ class ProfitMax(object):
 
         """
         e_leaf = np.empty_like(p)
-
+        e_leaf_test = np.empty_like(p)
         # integrate over the full range of water potentials from psi_soil to
         # e_crit
         for i in range(len(p)):
             e_leaf[i], err = quad(self.get_xylem_vulnerability, p[i], p[0])
+
+        #for i in range(len(p)):
+        #    e_leaf_test[i] = self.integrate(self.get_xylem_vulnerability,
+        #                                    len(p), p[i], p[0])
+
+
+        #plt.plot(e_leaf, "ro")
+        #plt.plot(e_leaf_test, "ob")
+        #plt.show()
+        #sys.exit()
 
         # mol m-2 s-1
         e_leaf[e_leaf > self.zero] *= self.Kmax * c.MMOL_2_MOL
 
         return np.maximum(self.zero, e_leaf)
 
+    def integrate(self, f, N, a, b):
+        """
+        Approximate the integration with the mid-point rule
+        """
+
+        value = 0.
+        value2 = 0.
+        for n in range(1, N+1):
+            value += f( a + ((n - 0.5) * ((b - a) / float(N))) )
+        value2 = ((b - a) / float(N)) * value
+
+        return value2
 
     def get_xylem_vulnerability(self, p):
         """
