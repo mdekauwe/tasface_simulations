@@ -36,7 +36,7 @@ class ProfitMax(object):
     """
 
     def __init__(self, params=None, met_timestep=30., resolution=10,
-                 derive_weibull_params=False):
+                 derive_weibull_params=False, previous_p=None):
 
         self.p = params
         self.met_timestep = met_timestep
@@ -54,7 +54,7 @@ class ProfitMax(object):
         self.Kcrit = 0.05 * self.Kmax
         self.resolution = resolution # number of water potential samples
         self.zero = 1.0E-17
-        self.previous_p = None
+        self.previous_p = previous_p
 
     def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
@@ -164,7 +164,7 @@ class ProfitMax(object):
         opt_gsc = opt_gsw * c.GSW_2_GSC   # mol CO2 m-2 s-1
         opt_e = e_canopy[idx] # mol H2O m-2 s-1
         opt_p = p[idx] # MPa
-        
+
         if self.previous_p is not None:
             self.previous_p = opt_p # MPa
 
