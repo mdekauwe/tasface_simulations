@@ -54,7 +54,7 @@ class ProfitMax(object):
         self.Kcrit = 0.05 * self.Kmax
         self.resolution = resolution # number of water potential samples
         self.zero = 1.0E-17
-        self.prev_ci = None
+
 
     def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
@@ -153,7 +153,6 @@ class ProfitMax(object):
         opt_gsc = opt_gsw * c.GSW_2_GSC   # mol CO2 m-2 s-1
         opt_e = e_canopy[idx] # mol H2O m-2 s-1
         opt_p = p[idx] # MPa
-        self.prev_ci = ci[idx]
 
         return opt_a, opt_gsw, opt_gsc, opt_e, opt_p
 
@@ -183,7 +182,7 @@ class ProfitMax(object):
 
         """
         e_leaf = np.empty_like(p)
-        e_leaf_test = np.empty_like(p)
+        #e_leaf_test = np.empty_like(p)
         # integrate over the full range of water potentials from psi_soil to
         # e_crit
         for i in range(len(p)):
@@ -278,12 +277,6 @@ class ProfitMax(object):
         """
         gamma_star = F.arrh(params.gamstar25, params.Eag, tleafK) # umol m-2 s-1
 
-        #if self.prev_ci is None:
-        #    min_ci = gamma_star
-        #else:
-        #    # start search 30% below previous solution
-        #    min_ci = max(gamma_star, self.prev_ci * 0.6)
-
         min_ci = gamma_star
         max_ci = ca # umol m-2 s-1
         an_new  = 0.0
@@ -294,6 +287,7 @@ class ProfitMax(object):
             # umol m-2 s-1
             an = F.photosynthesis_given_ci(params, Ci=ci_new, Tleaf=tleafK,
                                            Par=par, scalex=scalex)
+
 
             gsc_new = an / (ca - ci_new) # mol m-2 s-1
 

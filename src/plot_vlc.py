@@ -33,7 +33,7 @@ Kplant = Kmax * weibull
 plt.plot(p, Kplant/Kmax)
 
 
-b_plant = 4
+b_plant = 1
 c_plant = 2.0
 
 
