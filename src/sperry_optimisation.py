@@ -110,7 +110,7 @@ class ProfitMax(object):
             # bound search, hypothesis that plant doesn't shift it's psi_leaf
             # that much between iterations
             min_p = min(psi_soil, self.previous_p * 0.5)
-            max_p = min(p_crit, self.previous_p * 1.5)
+            max_p = max(p_crit, self.previous_p * 1.5)
 
         p = np.linspace(min_p, max_p, self.resolution)
         ci = np.empty_like(p)
