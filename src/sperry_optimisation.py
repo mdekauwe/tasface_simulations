@@ -112,7 +112,7 @@ class ProfitMax(object):
             min_p = min(psi_soil, self.previous_p * 0.5)
             max_p = min(p_crit, self.previous_p * 1.5)
 
-        p = np.linspace(psi_soil, p_crit, self.resolution)
+        p = np.linspace(min_p, max_p, self.resolution)
         ci = np.empty_like(p)
         a_canopy = np.empty_like(p)
 
