@@ -54,7 +54,7 @@ class ProfitMax(object):
         self.Kcrit = 0.05 * self.Kmax
         self.resolution = resolution # number of water potential samples
         self.zero = 1.0E-17
-
+        self.previous_p = None
 
     def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
@@ -100,6 +100,17 @@ class ProfitMax(object):
         # Canopy xylem pressure (P_crit) MPa, beyond which tree
         # desiccates (Ecrit), MPa
         p_crit = -self.b * np.log(self.Kmax / self.Kcrit)**(1.0 / self.c)
+
+
+        # Search full "space"
+        if self.previous_p is None:
+            min_p = psi_soil
+            max_p = p_crit
+        else:
+            # bound search, hypothesis that plant doesn't shift it's psi_leaf
+            # that much between iterations
+            min_p = min(psi_soil, self.previous_p * 0.5)
+            max_p = min(p_crit, self.previous_p * 1.5)
 
         p = np.linspace(psi_soil, p_crit, self.resolution)
         ci = np.empty_like(p)
@@ -153,6 +164,9 @@ class ProfitMax(object):
         opt_gsc = opt_gsw * c.GSW_2_GSC   # mol CO2 m-2 s-1
         opt_e = e_canopy[idx] # mol H2O m-2 s-1
         opt_p = p[idx] # MPa
+        
+        if self.previous_p is not None:
+            self.previous_p = opt_p # MPa
 
         return opt_a, opt_gsw, opt_gsc, opt_e, opt_p
 
