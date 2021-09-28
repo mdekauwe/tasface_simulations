@@ -275,7 +275,7 @@ if __name__ == "__main__":
     # Need to create an LAI harvest timeseries
     lai = np.zeros(len(met))
     lai_max = 4.0
-    days_to_max = 30
+    days_to_max = 180 * 24 # hourly
     cnt = 0
     for i in range(len(lai)):
 
@@ -293,7 +293,9 @@ if __name__ == "__main__":
             cnt = 0
 
     #lai = np.ones(len(met)) * 1.0
-
+    #plt.plot(lai)
+    #plt.show()
+    #sys.exit()
 
     out_aCa = main(p, met, lai)
 
@@ -302,8 +304,8 @@ if __name__ == "__main__":
     out_eCa = main(p, met, lai)
 
 
-    lai *= 1.2
-    out_eCa_eL = main(p, met, lai)
+    #lai *= 1.2
+    #out_eCa_eL = main(p, met, lai)
 
     print("Totals - A: %f, E: %f" % \
             (np.sum(out_aCa.An_can), np.sum(out_aCa.E_can)))
@@ -320,8 +322,9 @@ if __name__ == "__main__":
     plt.rcParams['xtick.labelsize'] = 12
     plt.rcParams['ytick.labelsize'] = 12
 
-    ax1 = fig.add_subplot(211)
-    ax2 = fig.add_subplot(212)
+    ax1 = fig.add_subplot(311)
+    ax2 = fig.add_subplot(312)
+    ax3 = fig.add_subplot(313)
     ax1.plot(time_day, out_aCa.An_can, "b-", label="Ambient")
     ax1.plot(time_day, out_eCa.An_can, "r-", label="Elevated", alpha=0.5)
     ax1.set_ylabel("An (g C m$^{-2}$ d$^{-1}$)")
@@ -333,7 +336,13 @@ if __name__ == "__main__":
     ax2.set_ylabel("E (mm d$^{-1}$)")
     ax2.set_ylim(0, 5)
 
+    ax3.plot(time_day, out_aCa.sw, "b-", label="aC$_a$")
+    ax3.plot(time_day, out_eCa.sw, "r-", label="eC$_a$")
+    ax3.set_ylabel("SWC (m$^{3}$ m$^{-3}$)")
+
+
     plt.setp(ax1.get_xticklabels(), visible=False)
+    plt.setp(ax2.get_xticklabels(), visible=False)
 
     fig.autofmt_xdate()
     fig.savefig("opt_A_E.png", bbox_inches='tight', pad_inches=0.1)

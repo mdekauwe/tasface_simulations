@@ -166,9 +166,6 @@ class Canopy(object):
                         gsc[ileaf] = opt_gsc[ileaf]
                         Evap[ileaf] = opt_e[ileaf]
 
-                        # Put Manon's funcs in and iterate
-                        # Calc leaf temp
-
                     else:
                         An[ileaf] = 0.0
                         gsw[ileaf] = 0.0

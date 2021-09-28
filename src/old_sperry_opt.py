@@ -12,7 +12,7 @@ import constants as c
 
 
 __author__  = "Martin De Kauwe"
-__version__ = "1.0 (28.09.2021)"
+__version__ = "1.0 (19.08.2020)"
 __email__   = "mdekauwe@gmail.com"
 
 
@@ -21,8 +21,7 @@ class ProfitMax(object):
     Sperry model assumes that plant maximises the normalised (0-1) difference
     between the relative gain and relative hydraulic risk
 
-    Implementation broadly follows CABLE implementation, albeit without energy
-    balance.
+    Implementation broadly follows Manon's code.
 
     References:
     -----------
@@ -36,7 +35,7 @@ class ProfitMax(object):
       226: 1638-1655. doi:10.1111/nph.16376
     """
 
-    def __init__(self, params=None, met_timestep=30., resolution=1000,
+    def __init__(self, params=None, met_timestep=30., resolution=10,
                  derive_weibull_params=False, previous_p=None):
 
         self.p = params
@@ -55,8 +54,9 @@ class ProfitMax(object):
         self.Kcrit = 0.05 * self.Kmax
         self.resolution = resolution # number of water potential samples
         self.zero = 1.0E-17
+        self.previous_p = previous_p
 
-    def optimisation(self, params, F, psi_soil, vpd, Cs, Tleaf, Par, press,
+    def optimisation(self, params, F, psi_soil, vpd, ca, tleafK, par, press,
                      lai, scalex):
         """
         Optimisation wrapper
@@ -101,91 +101,77 @@ class ProfitMax(object):
         # desiccates (Ecrit), MPa
         p_crit = -self.b * np.log(self.Kmax / self.Kcrit)**(1.0 / self.c)
 
-        p = np.zeros(self.resolution)
-        Ci = np.empty_like(p)
-        an_leaf = np.empty_like(p)
 
-        Vcmax = F.peaked_arrh(params.Vcmax25, params.Eav, Tleaf,
-                              params.deltaSv, params.Hdv)
-        Jmax = F.peaked_arrh(params.Jmax25, params.Eaj, Tleaf, params.deltaSj,
-                             params.Hdj)
-        Rd = 0.015 * Vcmax
-        gamma_star = F.arrh(params.gamstar25, params.Eag, Tleaf)
-        Km = F.calc_michaelis_menten_constants(params, Tleaf)
-        J = F.calc_electron_transport_rate(params, Par, Jmax)
-        Vj = J / 4.0
+        # Search full "space"
+        if self.previous_p is None:
+            min_p = psi_soil
+            max_p = p_crit
+        else:
+            # bound search, hypothesis that plant doesn't shift it's psi_leaf
+            # that much between iterations
 
-        # Generate a sequence of Ci's that we will solve the optimisation
-        # model for, range btw gamma_star and Cs. umol mol-1
-        lower = gamma_star
-        upper = Cs
-        for k in range(self.resolution):
-            Ci[k] = lower + float(k) * (upper - lower) / float(self.resolution-1)
+            ## Need to add something for when it rains...see fortran code
 
-        # Calculate the sunlit/shaded A_leaf (i.e. scaled up), umol m-2 s-1
-        Ac = F.assim(Ci, gamma_star, a1=Vcmax, a2=Km)
-        Aj = F.assim(Ci, gamma_star, a1=Vj, a2=2.0*gamma_star)
-        A = -self.QUADP(1.0-1E-04, Ac+Aj, Ac*Aj)
-        an_leaf = A - Rd # Net photosynthesis, umol m-2 s-1
+            min_p = min(psi_soil, self.previous_p * 0.5)
+            max_p = max(p_crit, self.previous_p * 1.5)
 
-        # Use an_leaf to infer gsc_sun/sha. NB. An is the scaled up values
-        # via scalex applied to Vcmax/Jmax
-        gsc = an_leaf / np.maximum(1.e-6, Cs - Ci) # mol CO2 m-2 s-1
+        p = np.linspace(min_p, max_p, self.resolution)
+        ci = np.empty_like(p)
+        a_canopy = np.empty_like(p)
 
-        # Assuming perfect coupling, infer E_sun/sha from gsc. NB. as we're
-        # iterating, Tleaf will change and so VPD, maintaining energy
-        # balance
-        e_leaf = gsc * c.GSC_2_GSW / press * vpd # mol H2O m-2 s-1
+        # Calculate transpiration for every water potential, integrating
+        # vulnerability to cavitation, mol H20 m-2 s-1 (leaf)
+        e_leaf = self.calc_transpiration(p)
 
-        # MPa
-        p = self.calc_psi_leaf(psi_soil, e_leaf, scalex)
+        # Scale to the sunlit or shaded fraction of the canopy, mol H20 m-2 s-1
+        e_canopy = e_leaf * lai
 
-        # Plant hydraulic conductance (mmol m-2 leaf s-1 MPa-1)
-        kcmax = self.Kmax * self.get_xylem_vulnerability(psi_soil)
+        #### Need to move Tleaf stuff here and uses that and the resulting
+        #### dleaf to get a new gsw = gb*gw / (gb-gw) * ww*-w
+
+        # assuming perfect coupling ... will fix
+        gsw = e_canopy / vpd * press # mol H20 m-2 s-1
+        gsc = gsw * c.GSW_2_GSC # mol CO2 m-2 s-1
+
+        # For every gsc/psi_leaf get a match An and Ci
+        for i in range(len(p)):
+            (ci[i], a_canopy[i]) = self.get_a_and_ci(params, F, gsc[i], ca,
+                                                     tleafK, par, press, scalex)
 
         # Soil–plant hydraulic conductance at canopy xylem pressure,
         # mmol m-2 s-1 MPa-1
-        Kc = self.Kmax * self.get_xylem_vulnerability(p)
+        K = self.Kmax * self.get_xylem_vulnerability(p)
 
-        # normalised gain (-)
-        gain = an_leaf / np.max(an_leaf)
+        ####
+        #### Discuss with manon, here she is reducing the kmax in time that is
+        #### used in the cost term
+        ####
 
-        # Ensure we don't check for profit in bad psi_leaf search space
-        gain = np.ma.masked_where(np.logical_or(p>=psi_soil, p<=p_crit), gain)
+        # mmol s-1 m-2 MPa-1
+        kcmax = self.Kmax * self.get_xylem_vulnerability(psi_soil)
 
         # normalised cost (-)
-        cost = (kcmax - Kc) / (kcmax - self.Kcrit)
+        #cost = (self.Kmax - K) / (self.Kmax - self.Kcrit)
+        cost = (kcmax - K) / (kcmax - self.Kcrit)
+        #cost = 1.0 - K / np.max(K)
+
+        # normalised gain (-)
+        gain = a_canopy / np.max(a_canopy)
 
         # Locate maximum profit
         profit = gain - cost
-
-        # Ensure we don't check for profit in bad psi_leaf search space
-        profit = np.ma.masked_where(np.logical_or(p>=psi_soil, p<=p_crit), profit)
-
         idx = np.argmax(profit)
 
-        opt_a = an_leaf[idx] # umol m-2 s-1
-        opt_gsc = gsc[idx] # mol CO2 m-2 s-1
-        opt_gsw = opt_gsc * c.GSC_2_GSW # mol H2O m-2 s-1
-        opt_e = e_leaf[idx] # mol H2O m-2 s-1
+        opt_a = a_canopy[idx] # umol m-2 s-1
+        opt_gsw = gsw[idx] # mol H2O m-2 s-1
+        opt_gsc = opt_gsw * c.GSW_2_GSC   # mol CO2 m-2 s-1
+        opt_e = e_canopy[idx] # mol H2O m-2 s-1
         opt_p = p[idx] # MPa
 
+        if self.previous_p is not None:
+            self.previous_p = opt_p # MPa
+
         return opt_a, opt_gsw, opt_gsc, opt_e, opt_p
-
-    def calc_psi_leaf(self, psi_soil, e_leaf, scalex):
-        # Calculation the approximate matching psi_leaf from the transpiration
-        # array
-
-        MOL_TO_MMOL = 1E3
-
-        # Rescale from canopy to leaf..as e_leaf is E_sun/sha i.e. big-leaf to
-        # unit leaf, mmol m-2 s-1
-        eleaf_mmol = e_leaf * MOL_TO_MMOL / scalex
-
-        # Infer the matching leaf water potential (MPa).
-        psi_leaf = psi_soil - eleaf_mmol / self.Kmax
-
-        return psi_leaf
 
     def calc_transpiration(self, p):
         """
@@ -371,15 +357,3 @@ class ProfitMax(object):
         c = num / den
 
         return b, c
-
-
-    def QUADP(self, A,B,C):
-        # Solves the quadratic equation - finds larger root.
-        d = B*B - 4.0 * A * C # discriminant
-        d = np.where(d<0.0, 0.0, d)
-
-        root = (- B + np.sqrt(B*B - 4*A*C)) / (2.*A)
-        root = np.where(np.logical_and(A == 0.0, B == 0.0), 0.0, root)
-        root = np.where(np.logical_and(A == 0.0, B > 0.0), -C/B, root)
-
-        return root
